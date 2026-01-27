@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu do Sistema - GO BURGER</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+        
+        .url-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-left: 4px solid #667eea;
+            margin: 20px;
+            border-radius: 8px;
+        }
+        
+        .url-display strong {
+            display: block;
+            margin-bottom: 5px;
+            color: #667eea;
+        }
+        
+        .url-display code {
+            background: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            display: block;
+            word-break: break-all;
+            font-size: 0.9rem;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .menu {
+            padding: 20px;
+        }
+        
+        .menu-item {
+            display: block;
+            padding: 18px 20px;
+            margin-bottom: 12px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            text-decoration: none;
+            color: #333;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+        
+        .menu-item:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102,126,234,0.3);
+        }
+        
+        .menu-item i {
+            width: 30px;
+            font-size: 1.2rem;
+            margin-right: 12px;
+        }
+        
+        .menu-item .label {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        .menu-item .desc {
+            font-size: 0.85rem;
+            opacity: 0.7;
+            margin-top: 4px;
+        }
+        
+        .menu-item.primary {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .menu-item.primary:hover {
+            background: #5a67d8;
+            border-color: #5a67d8;
+        }
+        
+        .copy-btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            margin-top: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .copy-btn:hover {
+            background: #059669;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 20px;
+            background: #f8f9fa;
+            font-size: 0.85rem;
+            color: #666;
+        }
+        
+        @media (max-width: 600px) {
+            .header h1 {
+                font-size: 1.5rem;
+            }
+            
+            .menu-item {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍔 GO BURGER PDV</h1>
+            <p>Sistema de Gestão de Pedidos</p>
+        </div>
+        
+        <div class="url-display">
+            <strong>🌐 URL Base do Sistema:</strong>
+            <code id="base-url">Carregando...</code>
+            <button class="copy-btn" onclick="copyBaseUrl()">
+                <i class="fas fa-copy"></i> Copiar URL Base
+            </button>
+        </div>
+        
+        <div class="menu">
+            <a href="painel-pedidos.html" class="menu-item primary" target="_blank">
+                <i class="fas fa-clipboard-list"></i>
+                <div>
+                    <div class="label">📋 Painel de Pedidos</div>
+                    <div class="desc">Gerencie pedidos em tempo real (RECOMENDADO)</div>
+                </div>
+            </a>
+            
+            <a href="index.html" class="menu-item" target="_blank">
+                <i class="fas fa-home"></i>
+                <div>
+                    <div class="label">🏠 Sistema Principal</div>
+                    <div class="desc">Acesso completo ao PDV</div>
+                </div>
+            </a>
+            
+            <a href="balcao.html" class="menu-item" target="_blank">
+                <i class="fas fa-cash-register"></i>
+                <div>
+                    <div class="label">💰 Balcão</div>
+                    <div class="desc">Interface de atendimento</div>
+                </div>
+            </a>
+            
+            <a href="acompanhar-pedido.html" class="menu-item" target="_blank">
+                <i class="fas fa-search"></i>
+                <div>
+                    <div class="label">🔍 Acompanhar Pedido</div>
+                    <div class="desc">Rastreamento de pedidos</div>
+                </div>
+            </a>
+            
+            <a href="login.html" class="menu-item" target="_blank">
+                <i class="fas fa-sign-in-alt"></i>
+                <div>
+                    <div class="label">🔐 Login</div>
+                    <div class="desc">Autenticação do sistema</div>
+                </div>
+            </a>
+            
+            <a href="limpar-cache-completo.html" class="menu-item" target="_blank">
+                <i class="fas fa-broom"></i>
+                <div>
+                    <div class="label">🧹 Limpar Cache</div>
+                    <div class="desc">Resolver problemas de cache</div>
+                </div>
+            </a>
+        </div>
+        
+        <div class="footer">
+            <p><strong>URLs Completas:</strong></p>
+            <p id="panel-url" style="margin-top: 10px; color: #667eea; font-weight: 600;">Carregando...</p>
+        </div>
+    </div>
+    
+    <script>
+        // Detectar URL base automaticamente
+        const baseUrl = window.location.origin + window.location.pathname.replace('menu.html', '');
+        document.getElementById('base-url').textContent = baseUrl;
+        
+        // Mostrar URL completa do painel
+        const panelUrl = baseUrl + 'painel-pedidos.html';
+        document.getElementById('panel-url').innerHTML = 
+            '<strong>Painel:</strong><br>' + panelUrl + '<br>' +
+            '<button class="copy-btn" onclick="copyPanelUrl()" style="margin-top: 10px;">' +
+            '<i class="fas fa-copy"></i> Copiar URL do Painel</button>';
+        
+        function copyBaseUrl() {
+            const url = document.getElementById('base-url').textContent;
+            navigator.clipboard.writeText(url).then(() => {
+                alert('✅ URL base copiada!');
+            });
+        }
+        
+        function copyPanelUrl() {
+            const url = baseUrl + 'painel-pedidos.html';
+            navigator.clipboard.writeText(url).then(() => {
+                alert('✅ URL do painel copiada!\n\nAgora você pode colar no WhatsApp ou navegador do celular.');
+            });
+        }
+        
+        // Salvar URL no localStorage para fácil acesso
+        localStorage.setItem('sistema-base-url', baseUrl);
+        localStorage.setItem('painel-pedidos-url', panelUrl);
+        
+        // Mostrar QR Code se possível
+        console.log('📱 URLs do Sistema:');
+        console.log('Base:', baseUrl);
+        console.log('Painel:', panelUrl);
+    </script>
+</body>
+</html>

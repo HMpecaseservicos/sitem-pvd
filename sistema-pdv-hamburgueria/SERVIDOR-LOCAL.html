@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Servidor Local - GO BURGER</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .warning h3 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        .info {
+            background: #d1ecf1;
+            border: 2px solid #0dcaf0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .info h3 {
+            color: #055160;
+            margin-bottom: 10px;
+        }
+        pre {
+            background: #2d3748;
+            color: #68d391;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 10px 0;
+            font-size: 13px;
+        }
+        .btn {
+            background: #667eea;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            font-weight: 600;
+        }
+        .btn:hover {
+            background: #5a67d8;
+        }
+        .btn-success {
+            background: #10b981;
+        }
+        .btn-success:hover {
+            background: #059669;
+        }
+        ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+        li {
+            margin: 5px 0;
+        }
+        .highlight {
+            background: #fef3c7;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚨 Servidor Local Necessário</h1>
+        
+        <div class="warning">
+            <h3>⚠️ PWA não funciona em file://</h3>
+            <p>Service Workers e notificações precisam de <strong>servidor HTTP/HTTPS</strong></p>
+        </div>
+        
+        <div class="info">
+            <h3>✅ SOLUÇÃO RÁPIDA - Iniciar Servidor Local:</h3>
+            
+            <p><strong>Opção 1: Python (Mais Fácil)</strong></p>
+            <p>Se tiver Python instalado:</p>
+            <pre>cd C:\pvd\sistema-pdv-hamburgueria
+python -m http.server 8000</pre>
+            <p>Depois acesse: <span class="highlight">http://localhost:8000/painel-pedidos.html</span></p>
+            
+            <p style="margin-top: 20px;"><strong>Opção 2: Node.js (http-server)</strong></p>
+            <pre>npm install -g http-server
+cd C:\pvd\sistema-pdv-hamburgueria
+http-server -p 8000</pre>
+            
+            <p style="margin-top: 20px;"><strong>Opção 3: VS Code (Live Server)</strong></p>
+            <ul>
+                <li>Instale extensão "Live Server"</li>
+                <li>Clique direito no arquivo</li>
+                <li>"Open with Live Server"</li>
+            </ul>
+            
+            <p style="margin-top: 20px;"><strong>Opção 4: MELHOR - Testar no Netlify</strong></p>
+            <p>Faça upload no Netlify e teste:</p>
+            <p><span class="highlight">https://burgerpdv.netlify.app/painel-pedidos.html</span></p>
+        </div>
+        
+        <button class="btn" onclick="openInstructions()">📖 Ver Tutorial Completo</button>
+        <button class="btn btn-success" onclick="testNetlify()">🚀 Abrir no Netlify</button>
+    </div>
+    
+    <script>
+        function openInstructions() {
+            alert('Siga os passos:\n\n' +
+                  '1. Abra PowerShell\n' +
+                  '2. Digite: cd C:\\pvd\\sistema-pdv-hamburgueria\n' +
+                  '3. Digite: python -m http.server 8000\n' +
+                  '4. Abra: http://localhost:8000/painel-pedidos.html\n\n' +
+                  'Ou faça upload no Netlify para testar online!');
+        }
+        
+        function testNetlify() {
+            window.open('https://burgerpdv.netlify.app/painel-pedidos.html', '_blank');
+        }
+        
+        // Detectar se está em file://
+        if (window.location.protocol === 'file:') {
+            console.warn('🚨 Rodando em file:// - PWA não funcionará!');
+        }
+    </script>
+</body>
+</html>

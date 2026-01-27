@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BurgerPDV - Sistema Profissional para Hamburguerias</title>
+    
+    <!-- Meta Tags Mobile -->
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="BurgerPDV">
+    <meta name="theme-color" content="#e74c3c">
+    <meta name="description" content="Sistema completo de gestão para hamburguerias com PDV, estoque, pedidos online e muito mais">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Icons e Favicon -->
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍔</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='20' fill='%23e74c3c'/%3E%3Ctext x='96' y='140' font-size='120' text-anchor='middle' fill='white'%3E🍔%3C/text%3E%3C/svg%3E">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="assets/css/styles.css">
+    <link rel="stylesheet" href="modules/cardapio/cardapio-modal.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.2/css/all.min.css" integrity="sha256-CTSx/A06dm1B063156EVh15m6Y67pAjZZaQc89LLSrU=" crossorigin="anonymous">
+    
+    <!-- Chart.js para gráficos financeiros (sem integrity para evitar bloqueios) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" crossorigin="anonymous"></script>
+</head>
+<body>
+    <!-- Banner de Aviso - Tracking Prevention -->
+    <div id="tracking-warning">
+        <div class="tracking-warning-content">
+            <div class="tracking-warning-left">
+                <div class="tracking-warning-icon" role="img" aria-label="Aviso">⚠️</div>
+                <div class="tracking-warning-text">
+                    <div class="tracking-warning-title">🚫 Navegador Bloqueando Armazenamento</div>
+                    <div class="tracking-warning-description">
+                        Seu navegador está impedindo o acesso aos dados do Firebase.<br>
+                        <strong>Por isso você vê "0 clientes", "0 pedidos", etc.</strong>
+                    </div>
+                </div>
+            </div>
+            <div class="tracking-warning-actions">
+                <button onclick="window.open('configurar-navegador.html', '_blank')" class="tracking-warning-btn-primary" type="button" aria-label="Abrir instruções para configurar o navegador">
+                    📖 Como Resolver (2 minutos)
+                </button>
+                <button onclick="document.getElementById('tracking-warning').style.display='none'; document.querySelector('.container').style.paddingTop='0';" class="tracking-warning-btn-secondary" type="button" aria-label="Fechar aviso">
+                    ✕ Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <div id="app-header"></div>
+        
+        <!-- Sidebar -->
+        <div id="app-sidebar" class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">🍔</div>
+                <h1>BurgerPDV</h1>
+                <p>Sistema Profissional</p>
+            </div>
+            
+            <div class="nav-menu">
+                <div class="nav-item active" data-page="dashboard">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </div>
+                <div class="nav-item" data-page="cardapio">
+                    <i class="fas fa-hamburger"></i>
+                    <span>Cardápio</span>
+                </div>
+                <div class="nav-item" data-page="pedidos">
+                    <i class="fas fa-receipt"></i>
+                    <span>Pedidos</span>
+                </div>
+                <div class="nav-item" data-page="clientes">
+                    <i class="fas fa-users"></i>
+                    <span>Clientes</span>
+                </div>
+                <div class="nav-item" data-page="estoque">
+                    <i class="fas fa-boxes"></i>
+                    <span>Estoque</span>
+                </div>
+                <div class="nav-item" data-page="financeiro">
+                    <i class="fas fa-dollar-sign"></i>
+                    <span>Financeiro</span>
+                </div>
+                <div class="nav-item" data-page="relatorios">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Relatórios</span>
+                </div>
+                <div class="nav-item" data-page="configuracoes">
+                    <i class="fas fa-cog"></i>
+                    <span>Configurações</span>
+                </div>
+            </div>
+            
+            <div class="user-area">
+                <div class="user-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="user-info">
+                    <div class="user-name">Administrador</div>
+                    <div class="user-role">Gerente</div>
+                </div>
+                <div class="logout-btn" title="Sair">
+                    <i class="fas fa-sign-out-alt"></i>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div id="app-content" class="main-content">
+            <div class="top-bar">
+                <div class="page-title">
+                    <h2 id="current-page-title">Dashboard</h2>
+                    <div class="page-subtitle">
+                        <span id="current-time"></span>
+                    </div>
+                </div>
+                
+                <div class="search-container">
+                    <div class="search-bar">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="search-input" placeholder="Pesquisar produto...">
+                    </div>
+                </div>
+                
+                <div class="top-actions">
+                    <button class="btn btn-secondary" id="print-report">
+                        <i class="fas fa-print"></i>
+                        Relatório Diário
+                    </button>
+                    <button class="btn btn-primary" id="new-order">
+                        <i class="fas fa-plus"></i>
+                        Novo Pedido
+                    </button>
+                </div>
+            </div>
+            
+            <div class="content-area">
+                <!-- Dashboard Page -->
+                <div class="page-content" id="dashboard-page">
+                    <!-- Dashboard Stats -->
+                    <div class="dashboard-stats">
+                        <div class="stat-card" id="daily-sales">
+                            <div class="stat-icon">
+                                <i class="fas fa-dollar-sign"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Vendas Hoje</h3>
+                                <div class="stat-value" id="sales-today">R$ 1.245,80</div>
+                                <div class="stat-trend up">
+                                    <i class="fas fa-arrow-up"></i>
+                                    12% em relação a ontem
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card" id="total-orders">
+                            <div class="stat-icon">
+                                <i class="fas fa-shopping-cart"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Pedidos Ativos</h3>
+                                <div class="stat-value" id="active-orders">8</div>
+                                <div class="stat-trend down">
+                                    <i class="fas fa-clock"></i>
+                                    2 em preparação
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Clientes Atendidos</h3>
+                                <div class="stat-value" id="customers-served">42</div>
+                                <div class="stat-trend up">
+                                    <i class="fas fa-arrow-up"></i>
+                                    5% na média
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-receipt"></i>
+                            </div>
+                            <div class="stat-info">
+                                <h3>Ticket Médio</h3>
+                                <div class="stat-value" id="average-ticket">R$ 29,65</div>
+                                <div class="stat-trend up">
+                                    <i class="fas fa-arrow-up"></i>
+                                    R$ 2,10
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- KPIs Profissionais -->
+                    <div class="dashboard-section">
+                        <h3>📊 Indicadores de Performance (KPIs)</h3>
+                        <div id="kpi-dashboard">
+                            <!-- KPIs serão renderizados pelo JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Orders -->
+                    <div class="dashboard-section">
+                        <h3>Pedidos Recentes</h3>
+                        <div class="recent-orders" id="recent-orders">
+                            <!-- Orders will be populated by JavaScript -->
+                        </div>
+                    </div>
+                    
+                    <!-- Sales Chart -->
+                    <div class="dashboard-section">
+                        <h3>Vendas por Hora</h3>
+                        <div class="chart-container">
+                            <canvas id="sales-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- PDV Page -->
+                
+                <!-- Other pages placeholders -->
+                <div class="page-content hidden" id="cardapio-page">
+                    <div class="page-header">
+                        <h2>Gerenciamento do Cardápio</h2>
+                        <div class="page-actions">
+                            <button class="btn btn-secondary" id="import-menu">
+                                <i class="fas fa-upload"></i>
+                                Importar
+                            </button>
+                            <button class="btn btn-primary" id="add-product">
+                                <i class="fas fa-plus"></i>
+                                Novo Produto
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="menu-management">
+                        <div class="menu-filters">
+                            <div class="filter-group">
+                                <label>Categoria:</label>
+                                <select id="menu-filter-category" title="Filtrar por categoria" aria-label="Filtrar produtos por categoria">
+                                    <option value="">Todas</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>Status:</label>
+                                <select id="menu-filter-status" title="Filtrar por status" aria-label="Filtrar produtos por disponibilidade">
+                                    <option value="">Todos</option>
+                                    <option value="true">Disponível</option>
+                                    <option value="false">Indisponível</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <input type="text" id="menu-search" placeholder="Buscar produto...">
+                            </div>
+                        </div>
+                        
+                        <div class="menu-categories">
+                            <h3>Categorias</h3>
+                            <div class="categories-list" id="menu-categories-list">
+                                <!-- Categories will be populated here -->
+                            </div>
+                            <button class="btn btn-secondary btn-sm" id="add-category">
+                                <i class="fas fa-plus"></i>
+                                Nova Categoria
+                            </button>
+                        </div>
+                        
+                        <div class="menu-products">
+                            <h3>Produtos</h3>
+                            <div class="products-table-container" id="menu-products-list">
+                                <table class="products-table" id="menu-products-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Produto</th>
+                                            <th>Categoria</th>
+                                            <th>Preço</th>
+                                            <th>Status</th>
+                                            <th>Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="menu-products-tbody">
+                                        <!-- Products will be populated here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="page-content hidden" id="pedidos-page">
+                    <div class="page-header">
+                        <h2>Gerenciamento de Pedidos</h2>
+                        <div class="page-actions">
+                            <button class="btn btn-secondary" id="refresh-orders">
+                                <i class="fas fa-sync"></i>
+                                Atualizar
+                            </button>
+                            <button class="btn btn-primary" id="new-order-direct">
+                                <i class="fas fa-plus"></i>
+                                Novo Pedido
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="orders-management">
+                        <div class="orders-filters">
+                            <div class="filter-group">
+                                <label>Status:</label>
+                                <select id="status-filter" title="Filtrar por status" aria-label="Filtrar pedidos por status">
+                                    <option value="">Todos</option>
+                                    <option value="confirmed">Confirmado</option>
+                                    <option value="preparing">Preparando</option>
+                                    <option value="ready">Pronto</option>
+                                    <option value="delivered">Entregue</option>
+                                    <option value="cancelled">Cancelado</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>Tipo:</label>
+                                <select id="orders-filter-type" title="Filtrar por tipo" aria-label="Filtrar pedidos por tipo de entrega">
+                                    <option value="">Todos</option>
+                                    <option value="balcao">Balcão</option>
+                                    <option value="mesa">Mesa</option>
+                                    <option value="delivery">Delivery</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>Data:</label>
+                                <input type="date" id="orders-filter-date" title="Filtrar por data" placeholder="Selecione a data" aria-label="Filtrar pedidos por data">
+                            </div>
+                            <div class="filter-group">
+                                <input type="text" id="orders-search" placeholder="Buscar por número ou cliente...">
+                            </div>
+                        </div>
+                        
+                        <div class="orders-list" id="orders-list">
+                        <div class="orders-grid" id="orders-grid">
+                            <!-- Orders will be populated here -->
+                        </div>
+                        </div>
+                        
+                        <div class="orders-pagination">
+                            <button class="btn btn-secondary" id="orders-prev-page" disabled>
+                                <i class="fas fa-chevron-left"></i>
+                                Anterior
+                            </button>
+                            <span id="orders-page-info">Página 1 de 1</span>
+                            <button class="btn btn-secondary" id="orders-next-page" disabled>
+                                <i class="fas fa-chevron-right"></i>
+                                Próximo
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="page-content hidden" id="clientes-page">
+                    <div class="page-header">
+                        <h2>Gerenciamento de Clientes</h2>
+                        <div class="page-actions">
+                            <button class="btn btn-secondary" id="export-customers">
+                                <i class="fas fa-download"></i>
+                                Exportar
+                            </button>
+                            <button class="btn btn-primary" id="add-customer">
+                                <i class="fas fa-plus"></i>
+                                Novo Cliente
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="customers-management">
+                        <div class="customers-stats">
+                            <div class="stat-card">
+                                <div class="stat-value" id="total-customers">0</div>
+                                <div class="stat-label">Total de Clientes</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="active-customers">0</div>
+                                <div class="stat-label">Clientes Ativos</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value" id="avg-customer-value">R$ 0,00</div>
+                                <div class="stat-label">Ticket Médio</div>
+                            </div>
+                        </div>
+                        
+                        <div class="customers-filters">
+                            <div class="filter-group">
+                                <input type="text" id="customers-search" placeholder="Buscar por nome, telefone ou email...">
+                            </div>
+                            <div class="filter-group">
+                                <label>Ordenar por:</label>
+                                <select id="customers-sort" title="Ordenar clientes" aria-label="Ordenar lista de clientes">
+                                    <option value="name">Nome</option>
+                                    <option value="lastOrder">Último Pedido</option>
+                                    <option value="totalOrders">Total de Pedidos</option>
+                                    <option value="totalSpent">Total Gasto</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="customers-table-container" id="customers-list">
+                            <table class="customers-table">
+                                <thead>
+                                    <tr>
+                                        <th>Cliente</th>
+                                        <th>Contato</th>
+                                        <th>Pedidos</th>
+                                        <th>Total Gasto</th>
+                                        <th>Último Pedido</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="customers-tbody">
+                                    <!-- Customers will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="page-content hidden" id="estoque-page">
+                    <div class="page-header">
+                        <h2>Controle de Estoque</h2>
+                        <div class="page-actions">
+                            <button class="btn btn-secondary" id="stock-report">
+                                <i class="fas fa-file-alt"></i>
+                                Relatório
+                            </button>
+                            <button class="btn btn-primary" id="add-stock-item">
+                                <i class="fas fa-plus"></i>
+                                Novo Item
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="stock-management">
+                        <div class="stock-alerts">
+                            <h3>Alertas de Estoque</h3>
+                            <div class="alerts-container" id="stock-alerts-container">
+                                <!-- Stock alerts will be populated here -->
+                            </div>
+                        </div>
+                        
+                        <div class="stock-filters">
+                            <div class="filter-group">
+                                <label>Categoria:</label>
+                                <select id="stock-filter-category" title="Filtrar por categoria" aria-label="Filtrar estoque por categoria">
+                                    <option value="">Todas</option>
+                                    <option value="ingredientes">Ingredientes</option>
+                                    <option value="bebidas">Bebidas</option>
+                                    <option value="embalagens">Embalagens</option>
+                                    <option value="descartaveis">Descartáveis</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>Status:</label>
+                                <select id="stock-filter-status" title="Filtrar por status" aria-label="Filtrar estoque por nível">
+                                    <option value="">Todos</option>
+                                    <option value="normal">Normal</option>
+                                    <option value="low">Baixo</option>
+                                    <option value="critical">Crítico</option>
+                                    <option value="out">Em Falta</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <input type="text" id="stock-search" placeholder="Buscar item...">
+                            </div>
+                        </div>
+                        
+                        <div class="stock-table-container" id="inventory-list">
+                            <table class="stock-table">
+                                <thead>
+                                    <tr>
+                                        <th>Item</th>
+                                        <th>Categoria</th>
+                                        <th>Quantidade</th>
+                                        <th>Unidade</th>
+                                        <th>Mínimo</th>
+                                        <th>Status</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="stock-tbody">
+                                    <!-- Stock items will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="stock-movements">
+                            <h3>Últimas Movimentações</h3>
+                            <div class="movements-list" id="stock-movements-list">
+                                <!-- Stock movements will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="page-content hidden" id="financeiro-page">
+                    <div class="page-header">
+                        <h2>Gestão Financeira</h2>
+                        <div class="page-actions">
+                            <button class="btn btn-secondary" id="export-financial">
+                                <i class="fas fa-download"></i>
+                                Exportar
+                            </button>
+                            <button class="btn btn-primary" id="add-transaction">
+                                <i class="fas fa-plus"></i>
+                                Nova Transação
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="financial-management">
+                        <div class="financial-overview">
+                            <div class="overview-cards">
+                                <div class="financial-card">
+                                    <div class="card-header">
+                                        <h3>Receitas Hoje</h3>
+                                        <i class="fas fa-arrow-up text-success"></i>
+                                    </div>
+                                    <div class="card-value" id="today-revenue">R$ 0,00</div>
+                                    <div class="card-change positive" id="revenue-change">+0%</div>
+                                </div>
+                                
+                                <div class="financial-card">
+                                    <div class="card-header">
+                                        <h3>Despesas Hoje</h3>
+                                        <i class="fas fa-arrow-down text-danger"></i>
+                                    </div>
+                                    <div class="card-value" id="today-expenses">R$ 0,00</div>
+                                    <div class="card-change negative" id="expenses-change">+0%</div>
+                                </div>
+                                
+                                <div class="financial-card">
+                                    <div class="card-header">
+                                        <h3>Lucro Líquido</h3>
+                                        <i class="fas fa-chart-line text-primary"></i>
+                                    </div>
+                                    <div class="card-value" id="net-profit">R$ 0,00</div>
+                                    <div class="card-change" id="profit-change">+0%</div>
+                                </div>
+                                
+                                <div class="financial-card">
+                                    <div class="card-header">
+                                        <h3>Margem de Lucro</h3>
+                                        <i class="fas fa-percentage text-info"></i>
+                                    </div>
+                                    <div class="card-value" id="profit-margin">0%</div>
+                                    <div class="card-change" id="margin-change">+0%</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="financial-charts">
+                            <div class="chart-container">
+                                <h3>Fluxo de Caixa (7 dias)</h3>
+                                <canvas id="cashflow-chart"></canvas>
+                            </div>
+                            
+                            <div class="chart-container">
+                                <h3>Receitas por Forma de Pagamento</h3>
+                                <canvas id="payment-methods-chart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="financial-filters">
+                            <div class="filter-group">
+                                <label>Período:</label>
+                                <select id="financial-period" title="Selecionar período" aria-label="Selecionar período para análise financeira">
+                                    <option value="today">Hoje</option>
+                                    <option value="week">Esta Semana</option>
+                                    <option value="month">Este Mês</option>
+                                    <option value="custom">Personalizado</option>
+                                </select>
+                            </div>
+                            <div class="filter-group hidden" id="custom-dates">
+                                <input type="date" id="start-date" title="Data inicial" placeholder="Data inicial" aria-label="Data inicial do período">
+                                <input type="date" id="end-date" title="Data final" placeholder="Data final" aria-label="Data final do período">
+                            </div>
+                            <div class="filter-group">
+                                <label>Tipo:</label>
+                                <select id="transaction-type" title="Tipo de transação" aria-label="Filtrar por tipo de transação financeira">
+                                    <option value="">Todos</option>
+                                    <option value="revenue">Receitas</option>
+                                    <option value="expense">Despesas</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="transactions-table-container">
+                            <table class="transactions-table">
+                                <thead>
+                                    <tr>
+                                        <th>Data</th>
+                                        <th>Descrição</th>
+                                        <th>Tipo</th>
+                                        <th>Categoria</th>
+                                        <th>Valor</th>
+                                        <th>Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="transactions-tbody">
+                                    <!-- Transactions will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="page-content hidden" id="relatorios-page">
+                    <div class="page-header">
+                        <h2>Relatórios e Análises</h2>
+                        <div class="page-actions">
+                            <button class="btn btn-secondary" id="schedule-report">
+                                <i class="fas fa-clock"></i>
+                                Agendar
+                            </button>
+                            <button class="btn btn-primary" id="generate-report">
+                                <i class="fas fa-file-pdf"></i>
+                                Gerar Relatório
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="reports-management">
+                        <div class="report-types">
+                            <h3>Tipos de Relatórios</h3>
+                            <div class="report-cards">
+                                <div class="report-card" data-report="sales">
+                                    <div class="report-icon">
+                                        <i class="fas fa-chart-bar"></i>
+                                    </div>
+                                    <div class="report-info">
+                                        <h4>Vendas</h4>
+                                        <p>Análise detalhada das vendas por período</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="report-card" data-report="products">
+                                    <div class="report-icon">
+                                        <i class="fas fa-hamburger"></i>
+                                    </div>
+                                    <div class="report-info">
+                                        <h4>Produtos</h4>
+                                        <p>Performance dos produtos mais vendidos</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="report-card" data-report="customers">
+                                    <div class="report-icon">
+                                        <i class="fas fa-users"></i>
+                                    </div>
+                                    <div class="report-info">
+                                        <h4>Clientes</h4>
+                                        <p>Análise do comportamento dos clientes</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="report-card" data-report="financial">
+                                    <div class="report-icon">
+                                        <i class="fas fa-dollar-sign"></i>
+                                    </div>
+                                    <div class="report-info">
+                                        <h4>Financeiro</h4>
+                                        <p>Fluxo de caixa e análise financeira</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="report-card" data-report="inventory">
+                                    <div class="report-icon">
+                                        <i class="fas fa-boxes"></i>
+                                    </div>
+                                    <div class="report-info">
+                                        <h4>Estoque</h4>
+                                        <p>Movimentação e níveis de estoque</p>
+                                    </div>
+                                </div>
+                                
+                                <div class="report-card" data-report="performance">
+                                    <div class="report-icon">
+                                        <i class="fas fa-tachometer-alt"></i>
+                                    </div>
+                                    <div class="report-info">
+                                        <h4>Performance</h4>
+                                        <p>KPIs e métricas de performance</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="report-filters">
+                            <h3>Filtros do Relatório</h3>
+                            <div class="filters-grid">
+                                <div class="filter-group">
+                                    <label>Período:</label>
+                                    <select id="report-period" title="Período do relatório" aria-label="Selecionar período do relatório">
+                                        <option value="today">Hoje</option>
+                                        <option value="yesterday">Ontem</option>
+                                        <option value="week">Esta Semana</option>
+                                        <option value="last-week">Semana Passada</option>
+                                        <option value="month">Este Mês</option>
+                                        <option value="last-month">Mês Passado</option>
+                                        <option value="quarter">Este Trimestre</option>
+                                        <option value="year">Este Ano</option>
+                                        <option value="custom">Personalizado</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="filter-group hidden" id="custom-report-dates">
+                                    <label>Data Inicial:</label>
+                                    <input type="date" id="report-start-date" title="Data inicial do relatório" placeholder="Data inicial" aria-label="Data inicial do relatório">
+                                    <label>Data Final:</label>
+                                    <input type="date" id="report-end-date" title="Data final do relatório" placeholder="Data final" aria-label="Data final do relatório">
+                                </div>
+                                
+                                <div class="filter-group">
+                                    <label>Formato:</label>
+                                    <select id="report-format" title="Formato do relatório" aria-label="Selecionar formato de exportação do relatório">
+                                        <option value="pdf">PDF</option>
+                                        <option value="excel">Excel</option>
+                                        <option value="csv">CSV</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="filter-group">
+                                    <label>Incluir Gráficos:</label>
+                                    <input type="checkbox" id="include-charts" checked title="Incluir gráficos no relatório" aria-label="Incluir gráficos no relatório">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="report-preview">
+                            <h3>Prévia do Relatório</h3>
+                            <div class="preview-container" id="report-preview-container">
+                                <div class="preview-placeholder">
+                                    <i class="fas fa-file-alt"></i>
+                                    <p>Selecione um tipo de relatório para ver a prévia</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="scheduled-reports">
+                            <h3>Relatórios Agendados</h3>
+                            <div class="scheduled-list" id="scheduled-reports-list">
+                                <!-- Scheduled reports will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="page-content hidden" id="configuracoes-page">
+                    <!-- Conteúdo será gerado dinamicamente pelo ConfiguracoesModule -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Payment Modal -->
+    <div class="modal" id="payment-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Finalizar Pedido</h3>
+                <button class="close-modal" title="Fechar">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="payment-summary">
+                    <h4>Resumo do Pedido</h4>
+                    <div class="payment-total">
+                        <span>Total a Pagar:</span>
+                        <span id="payment-total">R$ 0,00</span>
+                    </div>
+                </div>
+                
+                <div class="payment-methods">
+                    <h4>Forma de Pagamento</h4>
+                    <div class="payment-options">
+                        <button class="payment-btn" data-method="money">
+                            <i class="fas fa-money-bill-wave"></i>
+                            Dinheiro
+                        </button>
+                        <button class="payment-btn" data-method="debit">
+                            <i class="fas fa-credit-card"></i>
+                            Cartão Débito
+                        </button>
+                        <button class="payment-btn" data-method="credit">
+                            <i class="fas fa-credit-card"></i>
+                            Cartão Crédito
+                        </button>
+                        <button class="payment-btn" data-method="pix">
+                            <i class="fab fa-pix"></i>
+                            PIX
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="payment-details hidden" id="payment-details">
+                    <!-- Payment specific details will be shown here -->
+                </div>
+                
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" id="cancel-payment">Cancelar</button>
+                    <button class="btn btn-success" id="confirm-payment" disabled>
+                        <i class="fas fa-check"></i>
+                        Confirmar Pagamento
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Product Customization Modal -->
+    <div class="modal" id="product-modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <div>
+                    <h3 id="product-modal-title">Personalizar Produto</h3>
+                    <p id="product-modal-description" class="text-muted"></p>
+                </div>
+                <button class="close-modal" title="Fechar">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body modal-body-flex">
+                <!-- Coluna Esquerda: Customizações -->
+                <div class="customization-column">
+                    <div class="product-customizations" id="product-customizations">
+                        <!-- Product customizations will be populated here -->
+                    </div>
+                    
+                    <div class="product-notes-section">
+                        <label for="product-notes">
+                            <i class="fas fa-comment"></i> Observações adicionais:
+                        </label>
+                        <textarea id="product-notes" 
+                                  placeholder="Ex: Sem cebola, bem passado, etc..."
+                                  rows="3"></textarea>
+                    </div>
+                </div>
+                
+                <!-- Coluna Direita: Resumo e Ações -->
+                <div class="order-summary-column">
+                    <div class="sticky-summary">
+                        <div class="summary-header">
+                            <h4><i class="fas fa-receipt"></i> Seu Pedido</h4>
+                        </div>
+                        
+                        <div class="product-price-base">
+                            <span>Preço base:</span>
+                            <span id="product-modal-price">R$ 0,00</span>
+                        </div>
+                        
+                        <div class="selected-items" id="selected-customizations-preview">
+                            <h5>Itens selecionados:</h5>
+                            <div id="customizations-list">
+                                <p class="text-muted">Nenhuma customização selecionada</p>
+                            </div>
+                        </div>
+                        
+                        <div class="quantity-selector-modern">
+                            <label><i class="fas fa-layer-group"></i> Quantidade:</label>
+                            <div class="quantity-controls-modern">
+                                <button class="quantity-btn-modern" id="decrease-qty" title="Diminuir quantidade" aria-label="Diminuir quantidade">
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <input type="number" id="product-quantity" value="1" min="1" max="99" readonly title="Quantidade" aria-label="Quantidade do produto">
+                                <button class="quantity-btn-modern" id="increase-qty" title="Aumentar quantidade" aria-label="Aumentar quantidade">
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="product-total-modern">
+                            <div class="total-label">Total do item:</div>
+                            <div class="total-value" id="product-total-price">R$ 0,00</div>
+                        </div>
+                        
+                        <div class="modal-actions-modern">
+                            <button class="btn btn-outline-secondary btn-block" id="cancel-product">
+                                <i class="fas fa-times"></i> Cancelar
+                            </button>
+                            <button class="btn btn-primary btn-block btn-add-cart" id="add-to-order">
+                                <i class="fas fa-shopping-cart"></i>
+                                Adicionar ao Pedido
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Discount Modal -->
+    <div class="modal" id="discount-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Aplicar Desconto</h3>
+                <button class="close-modal" title="Fechar">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="discount-options">
+                    <div class="discount-type">
+                        <label>
+                            <input type="radio" name="discount-type" value="percentage" checked>
+                            Percentual (%)
+                        </label>
+                        <label>
+                            <input type="radio" name="discount-type" value="fixed">
+                            Valor Fixo (R$)
+                        </label>
+                    </div>
+                    
+                    <div class="discount-input">
+                        <input type="number" id="discount-value" placeholder="0" min="0">
+                        <span id="discount-symbol">%</span>
+                    </div>
+                    
+                    <div class="discount-preview">
+                        <div class="preview-line">
+                            <span>Subtotal:</span>
+                            <span id="discount-preview-subtotal">R$ 0,00</span>
+                        </div>
+                        <div class="preview-line">
+                            <span>Desconto:</span>
+                            <span id="discount-preview-amount">R$ 0,00</span>
+                        </div>
+                        <div class="preview-line total">
+                            <span>Total:</span>
+                            <span id="discount-preview-total">R$ 0,00</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" id="cancel-discount">Cancelar</button>
+                    <button class="btn btn-primary" id="apply-discount">
+                        <i class="fas fa-check"></i>
+                        Aplicar Desconto
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Product Management Modal -->
+    <div class="modal" id="product-management-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="product-management-title">Adicionar Produto</h3>
+                <button class="close-modal" title="Fechar">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="product-form">
+                    <div class="form-group">
+                        <label>Nome do Produto:</label>
+                        <input type="text" id="product-form-name" placeholder="Digite o nome do produto" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Descrição:</label>
+                        <textarea id="product-form-description" placeholder="Descreva o produto (opcional)"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Categoria:</label>
+                        <select id="product-form-category" title="Categoria do produto" required>
+                            <!-- Categories will be populated -->
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Preço (R$):</label>
+                        <input type="number" id="product-form-price" step="0.01" min="0" placeholder="0,00" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Tempo de Preparo (min):</label>
+                        <input type="number" id="product-form-prep-time" min="1" value="10" placeholder="Minutos">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Disponível:</label>
+                        <input type="checkbox" id="product-form-available" title="Produto disponível" checked>
+                    </div>
+                </form>
+                
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" id="cancel-product-form">Cancelar</button>
+                    <button class="btn btn-primary" id="save-product-form">
+                        <i class="fas fa-save"></i>
+                        Salvar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stock Management Modal -->
+    <div class="modal" id="stock-management-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="stock-management-title">Adicionar Item de Estoque</h3>
+                <button class="close-modal" title="Fechar">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="stock-form">
+                    <div class="form-group">
+                        <label>Nome do Item:</label>
+                        <input type="text" id="stock-form-name" placeholder="Nome do item" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Categoria:</label>
+                        <select id="stock-form-category" title="Categoria do item" required>
+                            <option value="ingredientes">Ingredientes</option>
+                            <option value="bebidas">Bebidas</option>
+                            <option value="embalagens">Embalagens</option>
+                            <option value="descartaveis">Descartáveis</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Quantidade Atual:</label>
+                        <input type="number" id="stock-form-quantity" step="0.01" min="0" placeholder="Quantidade" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Unidade:</label>
+                        <select id="stock-form-unit" title="Unidade de medida" required>
+                            <option value="kg">Quilograma (kg)</option>
+                            <option value="g">Grama (g)</option>
+                            <option value="l">Litro (l)</option>
+                            <option value="ml">Mililitro (ml)</option>
+                            <option value="un">Unidade</option>
+                            <option value="pc">Peça</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Quantidade Mínima:</label>
+                        <input type="number" id="stock-form-min-quantity" step="0.01" min="0" placeholder="Quantidade mínima" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Preço de Custo (R$):</label>
+                        <input type="number" id="stock-form-cost" step="0.01" min="0" placeholder="Custo unitário">
+                    </div>
+                </form>
+                
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" id="cancel-stock-form">Cancelar</button>
+                    <button class="btn btn-primary" id="save-stock-form">
+                        <i class="fas fa-save"></i>
+                        Salvar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    
+    <!-- Order Details Modal -->
+    <div class="modal" id="order-details-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="order-details-title">Detalhes do Pedido</h3>
+                <button class="close-modal" title="Fechar">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="order-details-content">
+                    <!-- Order details will be populated here -->
+                </div>
+                
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" id="print-order-details">
+                        <i class="fas fa-print"></i>
+                        Imprimir
+                    </button>
+                    <button class="btn btn-primary" id="close-order-details">
+                        Fechar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Loading Overlay -->
+    <div class="loading-overlay hidden" id="loading-overlay">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Carregando...</p>
+        </div>
+    </div>
+    
+    <!-- Toast Notifications -->
+    <div class="toast-container" id="toast-container">
+        <!-- Toast notifications will be added here dynamically -->
+    </div>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <!-- Scripts do Sistema Modular ES6 -->
+    
+    <!-- Firebase Configuration - Inicializar ANTES do adapter -->
+    <script src="modules/shared/firebase-config.js"></script>
+    
+    <!-- Inicializar Firebase antes de continuar -->
+    <script>
+        // Inicializar Firebase imediatamente
+        if (typeof firebase !== 'undefined' && window.firebaseManager) {
+            firebaseManager.init().then((initialized) => {
+                if (initialized) {
+                    console.log('✅ Firebase inicializado no index.html');
+                } else {
+                    console.warn('⚠️ Firebase não inicializado - funcionando apenas localmente');
+                }
+            });
+        }
+        
+        // Detector de Tracking Prevention e Storage
+        (function() {
+            let trackingBlockedCount = 0;
+            let storageBlocked = false;
+            const originalError = console.error;
+            const originalWarn = console.warn;
+            
+            // Testar acesso ao localStorage/IndexedDB IMEDIATAMENTE
+            function testStorageAccess() {
+                try {
+                    // Teste 1: localStorage
+                    const testKey = '__storage_test__';
+                    localStorage.setItem(testKey, 'test');
+                    localStorage.removeItem(testKey);
+                    
+                    // Teste 2: IndexedDB
+                    if (!window.indexedDB) {
+                        console.warn('⚠️ IndexedDB não disponível');
+                        storageBlocked = true;
+                        return false;
+                    }
+                    
+                    const request = indexedDB.open('__test__', 1);
+                    request.onerror = function() {
+                        console.warn('⚠️ IndexedDB bloqueado');
+                        storageBlocked = true;
+                        showTrackingWarning();
+                    };
+                    request.onsuccess = function() {
+                        indexedDB.deleteDatabase('__test__');
+                    };
+                    
+                    return true;
+                } catch (error) {
+                    console.error('⚠️ Erro ao testar armazenamento:', error);
+                    storageBlocked = true;
+                    showTrackingWarning();
+                    return false;
+                }
+            }
+            
+            // Interceptar console.error e console.warn
+            console.error = function(...args) {
+                const message = args.join(' ');
+                
+                // Filtrar erros de chave duplicada (normais após atualização do banco)
+                if (message.includes('Key already exists in the object store')) {
+                    return; // Não exibir esses erros - são esperados
+                }
+                
+                // Detectar Tracking Prevention
+                if (message.includes('Tracking Prevention') || 
+                    message.includes('blocked access to storage') ||
+                    message.includes('QuotaExceededError') ||
+                    message.includes('SecurityError')) {
+                    trackingBlockedCount++;
+                    storageBlocked = true;
+                    if (trackingBlockedCount >= 2) {
+                        showTrackingWarning();
+                    }
+                }
+                
+                originalError.apply(console, args);
+            };
+            
+            console.warn = function(...args) {
+                const message = args.join(' ');
+                if (message.includes('Tracking Prevention') || 
+                    message.includes('blocked access to storage')) {
+                    trackingBlockedCount++;
+                    storageBlocked = true;
+                    if (trackingBlockedCount >= 2) {
+                        showTrackingWarning();
+                    }
+                }
+                originalWarn.apply(console, args);
+            };
+            
+            // Mostrar banner de aviso
+            function showTrackingWarning() {
+                const banner = document.getElementById('tracking-warning');
+                if (banner && banner.style.display === 'none') {
+                    banner.style.display = 'block';
+                    
+                    // Ajustar padding do container para não sobrepor
+                    const container = document.querySelector('.container');
+                    if (container) {
+                        container.style.paddingTop = '100px';
+                        container.style.transition = 'padding-top 0.3s';
+                    }
+                    
+                    // Mostrar alerta adicional
+                    console.error('%c⚠️ PROBLEMA DETECTADO: Navegador bloqueando armazenamento!', 
+                        'background: #ff6b6b; color: white; font-size: 16px; padding: 10px; border-radius: 5px;');
+                    console.error('%cSolução: Configure a Prevenção de Rastreamento para "Básico" ou use o Chrome', 
+                        'background: #ffc107; color: black; font-size: 14px; padding: 8px; border-radius: 5px;');
+                }
+            }
+            
+            // Testar armazenamento imediatamente
+            console.log('🔍 Testando acesso ao armazenamento...');
+            const storageOk = testStorageAccess();
+            
+            if (storageBlocked) {
+                console.error('❌ Armazenamento bloqueado pelo navegador!');
+                setTimeout(showTrackingWarning, 1000);
+            } else if (storageOk) {
+                console.log('✅ Armazenamento acessível');
+            }
+            
+            // Verificar após 3 segundos se Firebase está offline por causa do bloqueio
+            setTimeout(() => {
+                if ((window.firebaseManager && !window.firebaseManager.isOnline && trackingBlockedCount > 0) || storageBlocked) {
+                    showTrackingWarning();
+                }
+            }, 3000);
+        })();
+    </script>
+    
+    <!-- Limpeza Automática de Databases Problemáticos -->
+    <script>
+        // CORREÇÃO CRÍTICA: Deletar order-locks database que causa travamentos
+        (function cleanupProblematicDatabases() {
+            console.log('🧹 Verificando databases problemáticos...');
+            
+            // Deletar order-locks que causa timeout no PDV
+            try {
+                const deleteRequest = indexedDB.deleteDatabase('order-locks');
+                deleteRequest.onsuccess = () => {
+                    console.log('✅ order-locks database removido (previne travamentos)');
+                };
+                deleteRequest.onerror = () => {
+                    console.log('ℹ️ order-locks database não existe (ok)');
+                };
+                deleteRequest.onblocked = () => {
+                    console.warn('⚠️ order-locks bloqueado, tentando forçar...');
+                    setTimeout(() => {
+                        indexedDB.deleteDatabase('order-locks');
+                    }, 100);
+                };
+            } catch (error) {
+                console.warn('⚠️ Erro ao limpar order-locks:', error.message);
+            }
+        })();
+    </script>
+
+    <!-- Dados de Exemplo (Sample Data) -->
+    <script type="module">
+        import { SAMPLE_DATA } from './data/sample-data.js';
+        
+        // Expor dados de exemplo globalmente
+        window.productData = {
+            products: SAMPLE_DATA.products || [],
+            categories: SAMPLE_DATA.categories || [
+                { id: 'hamburgueres', name: 'Hambúrgueres', icon: '🍔' },
+                { id: 'bebidas', name: 'Bebidas', icon: '🥤' },
+                { id: 'acompanhamentos', name: 'Acompanhamentos', icon: '🍟' },
+                { id: 'sobremesas', name: 'Sobremesas', icon: '🍰' }
+            ]
+        };
+        
+        console.log(`📦 Dados de exemplo carregados: ${window.productData.products.length} produtos`);
+        
+        // Função para popular banco com dados de exemplo se vazio
+        window.populateIfEmpty = async function() {
+            try {
+                const products = await window.getFromDatabase('products');
+                if (!products || products.length === 0) {
+                    console.log('📦 Banco vazio, populando com dados de exemplo...');
+                    
+                    // Salvar produtos
+                    for (const product of SAMPLE_DATA.products) {
+                        await window.saveToDatabase('products', product);
+                    }
+                    
+                    // Salvar categorias
+                    for (const category of SAMPLE_DATA.categories) {
+                        await window.saveToDatabase('categories', category);
+                    }
+                    
+                    console.log(`✅ ${SAMPLE_DATA.products.length} produtos e ${SAMPLE_DATA.categories.length} categorias salvos`);
+                    return true;
+                }
+                return false;
+            } catch (error) {
+                console.error('❌ Erro ao popular dados:', error);
+                return false;
+            }
+        };
+    </script>
+    
+    <!-- App Principal do Sistema Modular -->
+    <script type="module" src="app.js"></script>
+    
+    <!-- Listener de Pedidos Online (depois do app.js para ter acesso às funções globais) -->
+    <script type="module" src="modules/shared/online-orders-listener.js"></script>
+
+    <!-- Service Worker Registration (PWA) -->
+    <script>
+        // Registrar Service Worker para funcionalidade offline
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then((registration) => {
+                        console.log('✅ Service Worker registrado:', registration.scope);
+                        
+                        // Verificar atualizações
+                        registration.addEventListener('updatefound', () => {
+                            const newWorker = registration.installing;
+                            console.log('🔄 Nova versão do Service Worker encontrada');
+                            
+                            newWorker.addEventListener('statechange', () => {
+                                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                                    console.log('✨ Nova versão disponível! Recarregue a página.');
+                                    // Opcionalmente, mostrar notificação ao usuário
+                                    if (confirm('Nova versão disponível! Deseja atualizar agora?')) {
+                                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                        window.location.reload();
+                                    }
+                                }
+                            });
+                        });
+                    })
+                    .catch((error) => {
+                        console.warn('⚠️ Erro ao registrar Service Worker:', error.message);
+                        console.warn('💡 PWA offline não disponível. Sistema funcionará apenas online.');
+                    });
+                
+                // Detectar quando Service Worker é ativado
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                    console.log('🔄 Service Worker atualizado, recarregando...');
+                    window.location.reload();
+                });
+            });
+        } else {
+            console.warn('⚠️ Service Worker não suportado neste navegador.');
+        }
+
+        // Detectar se está sendo executado como PWA
+        window.addEventListener('DOMContentLoaded', () => {
+            const isPWA = window.matchMedia('(display-mode: standalone)').matches 
+                       || window.navigator.standalone 
+                       || document.referrer.includes('android-app://');
+            
+            if (isPWA) {
+                console.log('📱 Executando como PWA (app instalado)');
+                document.body.classList.add('pwa-mode');
+            } else {
+                console.log('🌐 Executando no navegador');
+            }
+        });
+
+        // Prompt de instalação do PWA
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            console.log('📲 PWA pode ser instalado');
+            
+            // Mostrar botão de instalação (opcional)
+            // Você pode adicionar um botão no UI para permitir instalação manual
+        });
+
+        // Detectar instalação
+        window.addEventListener('appinstalled', () => {
+            console.log('✅ PWA instalado com sucesso!');
+            deferredPrompt = null;
+        });
+
+        // Adicionar suporte a toque para mobile
+        if ('ontouchstart' in window) {
+            document.body.classList.add('touch-enabled');
+        }
+    </script>
+</body>
+</html>

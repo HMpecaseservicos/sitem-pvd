@@ -1,0 +1,1297 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel do Balcao - BurgerPDV</title>
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- Favicon usando SVG inline (hamburger icon) -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>B</text></svg>">
+    
+    <!-- Apple Touch Icon (fallback) -->
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>B</text></svg>">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a67d8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --dark: #1f2937;
+            --light: #f3f4f6;
+            --white: #ffffff;
+            
+            /* Status Colors */
+            --status-pending: #f59e0b;
+            --status-confirmed: #3b82f6;
+            --status-preparing: #8b5cf6;
+            --status-ready: #10b981;
+            --status-delivered: #6b7280;
+            --status-cancelled: #ef4444;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            color: var(--white);
+        }
+        
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .header-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo-icon {
+            font-size: 2rem;
+        }
+        
+        .logo-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .header-stats {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .stat-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+        }
+        
+        .stat-badge i {
+            font-size: 1rem;
+        }
+        
+        .stat-badge.pending { color: var(--status-pending); }
+        .stat-badge.preparing { color: var(--status-preparing); }
+        .stat-badge.ready { color: var(--status-ready); }
+        
+        .header-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 10px;
+            font-family: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-icon {
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-radius: 12px;
+        }
+        
+        .btn-icon:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Status Filters */
+        .filters {
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .filters-content {
+            max-width: 1600px;
+            margin: 0 auto;
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+        
+        .filter-btn {
+            padding: 10px 20px;
+            border: 2px solid transparent;
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-family: inherit;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .filter-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .filter-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+        
+        .filter-btn .count {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+        }
+        
+        /* Main Content */
+        .main {
+            padding: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        /* Orders Grid */
+        .orders-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        
+        /* Order Card */
+        .order-card {
+            background: rgba(255, 255, 255, 0.1);
+            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .order-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .order-card.pending { border-top: 4px solid var(--status-pending); }
+        .order-card.confirmed { border-top: 4px solid var(--status-confirmed); }
+        .order-card.preparing { border-top: 4px solid var(--status-preparing); }
+        .order-card.ready { border-top: 4px solid var(--status-ready); }
+        .order-card.delivered { border-top: 4px solid var(--status-delivered); }
+        .order-card.cancelled { border-top: 4px solid var(--status-cancelled); opacity: 0.6; }
+        
+        .order-header {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .order-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        
+        .order-type {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+        
+        .order-status-badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-pending { background: var(--status-pending); color: #000; }
+        .status-confirmed { background: var(--status-confirmed); color: #fff; }
+        .status-preparing { background: var(--status-preparing); color: #fff; }
+        .status-ready { background: var(--status-ready); color: #fff; }
+        .status-delivered { background: var(--status-delivered); color: #fff; }
+        .status-cancelled { background: var(--status-cancelled); color: #fff; }
+        
+        .order-body {
+            padding: 15px 20px;
+        }
+        
+        .order-customer {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .customer-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+        }
+        
+        .customer-info h4 {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+        
+        .customer-info p {
+            font-size: 0.85rem;
+            opacity: 0.7;
+        }
+        
+        .order-items {
+            margin-bottom: 15px;
+        }
+        
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+        }
+        
+        .order-item:last-child {
+            border-bottom: none;
+        }
+        
+        .item-name {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .item-qty {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        
+        .item-extras {
+            font-size: 0.75rem;
+            opacity: 0.6;
+            margin-left: 35px;
+            margin-top: 4px;
+        }
+        
+        .order-time {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .order-time.urgent {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+        
+        .order-total {
+            font-size: 1.3rem;
+            font-weight: 700;
+            text-align: right;
+            color: var(--success);
+        }
+        
+        .order-footer {
+            padding: 15px 20px;
+            background: rgba(0, 0, 0, 0.2);
+            display: flex;
+            gap: 10px;
+        }
+        
+        .order-footer .btn {
+            flex: 1;
+            justify-content: center;
+            padding: 12px;
+        }
+        
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+        
+        .btn-warning {
+            background: var(--warning);
+            color: #000;
+        }
+        
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            opacity: 0.7;
+        }
+        
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+        
+        .empty-state h3 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Sound Toggle */
+        .sound-toggle {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .sound-toggle:hover {
+            transform: scale(1.1);
+        }
+        
+        .sound-toggle.muted {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Connection Status */
+        .connection-status {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+        
+        .connection-status.connected {
+            background: rgba(16, 185, 129, 0.2);
+            color: #6ee7b7;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+        
+        .connection-status.disconnected {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        .pulse {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        .connected .pulse {
+            background: var(--success);
+        }
+        
+        .disconnected .pulse {
+            background: var(--danger);
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.5; transform: scale(1.2); }
+        }
+        
+        /* Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .toast {
+            padding: 15px 20px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.95);
+            color: #333;
+            font-weight: 500;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: toastIn 0.3s ease;
+            max-width: 350px;
+        }
+        
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateX(100px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .toast.success { border-left: 4px solid var(--success); }
+        .toast.error { border-left: 4px solid var(--danger); }
+        .toast.warning { border-left: 4px solid var(--warning); }
+        .toast.info { border-left: 4px solid var(--info); }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                justify-content: center;
+            }
+            
+            .header-stats {
+                order: 3;
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .logo-text {
+                font-size: 1.2rem;
+            }
+            
+            .orders-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .order-footer {
+                flex-wrap: wrap;
+            }
+            
+            .order-footer .btn {
+                flex: 1 1 45%;
+            }
+        }
+        
+        /* Fullscreen Mode */
+        .fullscreen-btn {
+            display: none;
+        }
+        
+        @media (min-width: 769px) {
+            .fullscreen-btn {
+                display: flex;
+            }
+        }
+        
+        /* Print Style */
+        @media print {
+            .header, .filters, .order-footer, .sound-toggle, .connection-status {
+                display: none !important;
+            }
+            
+            body {
+                background: white;
+                color: black;
+            }
+            
+            .order-card {
+                background: white;
+                border: 1px solid #ddd;
+                page-break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <span class="logo-icon">B</span>
+                <span class="logo-text">Painel do Balcão</span>
+            </div>
+            
+            <div class="header-stats">
+                <div class="stat-badge pending">
+                    <i class="fas fa-clock"></i>
+                    <span id="pending-count">0</span> Pendentes
+                </div>
+                <div class="stat-badge preparing">
+                    <i class="fas fa-fire"></i>
+                    <span id="preparing-count">0</span> Preparando
+                </div>
+                <div class="stat-badge ready">
+                    <i class="fas fa-check-circle"></i>
+                    <span id="ready-count">0</span> Prontos
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <button class="btn btn-icon" onclick="refreshOrders()" title="Atualizar">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+                <button class="btn btn-icon fullscreen-btn" onclick="toggleFullscreen()" title="Tela Cheia">
+                    <i class="fas fa-expand"></i>
+                </button>
+                <a href="index.html" class="btn btn-primary">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>Sistema</span>
+                </a>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Filters -->
+    <div class="filters">
+        <div class="filters-content">
+            <button class="filter-btn active" data-status="all">
+                <i class="fas fa-list"></i>
+                Todos
+                <span class="count" id="all-count">0</span>
+            </button>
+            <button class="filter-btn" data-status="pending">
+                <i class="fas fa-clock"></i>
+                Pendentes
+                <span class="count" id="filter-pending-count">0</span>
+            </button>
+            <button class="filter-btn" data-status="confirmed">
+                <i class="fas fa-check"></i>
+                Confirmados
+                <span class="count" id="filter-confirmed-count">0</span>
+            </button>
+            <button class="filter-btn" data-status="preparing">
+                <i class="fas fa-fire"></i>
+                Preparando
+                <span class="count" id="filter-preparing-count">0</span>
+            </button>
+            <button class="filter-btn" data-status="ready">
+                <i class="fas fa-bell"></i>
+                Prontos
+                <span class="count" id="filter-ready-count">0</span>
+            </button>
+            <button class="filter-btn" data-status="delivered">
+                <i class="fas fa-check-double"></i>
+                Entregues
+                <span class="count" id="filter-delivered-count">0</span>
+            </button>
+        </div>
+    </div>
+    
+    <!-- Connection Status -->
+    <div class="connection-status disconnected" id="connection-status">
+        <span class="pulse"></span>
+        <span id="connection-text">Conectando...</span>
+    </div>
+    
+    <!-- Main Content -->
+    <main class="main">
+        <div class="orders-grid" id="orders-grid">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Carregando pedidos...</p>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Sound Toggle -->
+    <button class="sound-toggle" id="sound-toggle" onclick="toggleSound()" title="Som de Notificação">
+        <i class="fas fa-volume-up"></i>
+    </button>
+    
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+    
+    <!-- Audio for notifications -->
+    <audio id="notification-sound" preload="auto">
+        <source src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" type="audio/mpeg">
+    </audio>
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js" onerror="handleFirebaseLoadError()"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js" onerror="handleFirebaseLoadError()"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js" onerror="handleFirebaseLoadError()"></script>
+    
+    <script>
+        // Handler para erros de carregamento do Firebase
+        function handleFirebaseLoadError() {
+            console.error('Erro ao carregar scripts do Firebase');
+            document.addEventListener('DOMContentLoaded', function() {
+                var grid = document.getElementById('orders-grid');
+                if (grid) {
+                    grid.innerHTML = '<div class="empty-state" style="grid-column: 1/-1; text-align: center; padding: 40px;">' +
+                        '<i class="fas fa-shield-alt" style="font-size: 3rem; color: #f59e0b; margin-bottom: 20px;"></i>' +
+                        '<h3>Bloqueio de Rastreamento Detectado</h3>' +
+                        '<p style="margin: 15px 0; color: #9ca3af;">O navegador esta bloqueando o Firebase.<br>' +
+                        'Para usar este painel, desative a Prevencao de Rastreamento nas configuracoes do navegador.</p>' +
+                        '<div style="background: #1f2937; padding: 15px; border-radius: 8px; text-align: left; font-size: 14px; margin-top: 20px;">' +
+                        '<strong>Microsoft Edge:</strong><br>' +
+                        '1. Clique no cadeado na barra de endereco<br>' +
+                        '2. Desative Prevencao de rastreamento para este site<br><br>' +
+                        '<strong>Ou:</strong> Use Google Chrome / Firefox' +
+                        '</div>' +
+                        '<button onclick="location.reload()" style="margin-top: 20px; padding: 12px 24px; background: #667eea; color: white; border: none; border-radius: 8px; cursor: pointer;">' +
+                        '<i class="fas fa-sync"></i> Tentar Novamente' +
+                        '</button>' +
+                        '</div>';
+                }
+            });
+        }
+    </script>
+    
+    <script>
+        'use strict';
+        
+        // ========================================
+        // CONFIGURACAO FIREBASE
+        // ========================================
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyBqJQd0YpxjndeUDLoBIDjw7WPpE42YI6s",
+            authDomain: "burgerpdv.firebaseapp.com",
+            databaseURL: "https://burgerpdv-default-rtdb.firebaseio.com",
+            projectId: "burgerpdv",
+            storageBucket: "burgerpdv.firebasestorage.app",
+            messagingSenderId: "810043325830",
+            appId: "1:810043325830:web:fcbdb9de2c6330633c4007"
+        };
+        
+        // Inicializar Firebase
+        let database = null;
+        let auth = null;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            database = firebase.database();
+            auth = firebase.auth();
+            console.log('Firebase inicializado com sucesso');
+        } catch (error) {
+            console.error('Erro ao inicializar Firebase:', error);
+        }
+        
+        // ========================================
+        // ESTADO DA APLICACAO
+        // ========================================
+        
+        let orders = [];
+        let currentFilter = 'all';
+        let soundEnabled = true;
+        let lastOrderCount = 0;
+        
+        // ========================================
+        // FUNCOES PRINCIPAIS
+        // ========================================
+        
+        function init() {
+            console.log('Painel do Balcao iniciado');
+            
+            // Carregar preferencias
+            soundEnabled = localStorage.getItem('balcao_sound') !== 'false';
+            updateSoundButton();
+            
+            // Configurar filtros
+            setupFilters();
+            
+            // Verificar se usuario ja esta autenticado (sessao do sistema principal)
+            if (auth) {
+                auth.onAuthStateChanged(function(user) {
+                    if (user) {
+                        console.log('Usuario autenticado:', user.email);
+                        startFirebaseListener();
+                    } else {
+                        // Usuario nao esta logado - mostrar mensagem
+                        console.log('Nenhum usuario autenticado');
+                        document.getElementById('orders-grid').innerHTML = 
+                            '<div class="empty-state" style="grid-column: 1/-1; text-align: center; padding: 40px;">' +
+                            '<i class="fas fa-user-lock" style="font-size: 3rem; color: #f59e0b; margin-bottom: 20px;"></i>' +
+                            '<h3>Login Necessario</h3>' +
+                            '<p style="margin: 15px 0; color: #9ca3af;">Para acessar o painel do balcao, faca login no sistema principal primeiro.</p>' +
+                            '<a href="index.html" class="btn btn-primary" style="display: inline-block; margin-top: 15px; padding: 12px 24px; background: #667eea; color: white; text-decoration: none; border-radius: 8px;">' +
+                            '<i class="fas fa-sign-in-alt"></i> Ir para Login' +
+                            '</a>' +
+                            '</div>';
+                        updateConnectionStatus(false);
+                    }
+                });
+            } else {
+                startFirebaseListener();
+            }
+        }
+        
+        function startFirebaseListener() {
+            // Verificar se Firebase esta disponivel
+            if (!database) {
+                console.error('Firebase nao disponivel');
+                document.getElementById('orders-grid').innerHTML = 
+                    '<div class="empty-state" style="grid-column: 1/-1;">' +
+                    '<i class="fas fa-exclamation-triangle"></i>' +
+                    '<h3>Erro de Conexao</h3>' +
+                    '<p>Nao foi possivel conectar ao Firebase.<br>Verifique as configuracoes do navegador.</p>' +
+                    '<button class="btn btn-primary" onclick="location.reload()" style="margin-top: 15px;">' +
+                    '<i class="fas fa-sync"></i> Tentar Novamente' +
+                    '</button>' +
+                    '</div>';
+                return;
+            }
+            
+            const ordersRef = database.ref('orders');
+            
+            // Monitorar conexão
+            database.ref('.info/connected').on('value', (snapshot) => {
+                const connected = snapshot.val();
+                updateConnectionStatus(connected);
+            });
+            
+            // Listener para pedidos
+            ordersRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                
+                if (data) {
+                    const newOrders = Object.entries(data).map(([id, order]) => ({
+                        id,
+                        ...order
+                    }));
+                    
+                    // Filtrar pedidos de hoje
+                    const today = new Date().toISOString().split('T')[0];
+                    orders = newOrders.filter(order => {
+                        if (!order.createdAt && !order.date) return false;
+                        const orderDate = (order.createdAt || order.date).split('T')[0];
+                        return orderDate === today;
+                    });
+                    
+                    // Ordenar por data (mais recentes primeiro)
+                    orders.sort((a, b) => {
+                        const dateA = new Date(a.createdAt || a.date);
+                        const dateB = new Date(b.createdAt || b.date);
+                        return dateB - dateA;
+                    });
+                    
+                    // Verificar novos pedidos
+                    if (orders.length > lastOrderCount && lastOrderCount > 0) {
+                        playNotificationSound();
+                        showToast('Novo pedido recebido!', 'success');
+                    }
+                    lastOrderCount = orders.length;
+                    
+                    renderOrders();
+                    updateStats();
+                } else {
+                    orders = [];
+                    renderOrders();
+                    updateStats();
+                }
+            }, (error) => {
+                console.error('Erro ao carregar pedidos:', error);
+                showToast('Erro ao conectar com o servidor', 'error');
+            });
+        }
+        
+        function renderOrders() {
+            const grid = document.getElementById('orders-grid');
+            
+            // Filtrar por status
+            let filtered = orders;
+            if (currentFilter !== 'all') {
+                filtered = orders.filter(o => o.status === currentFilter);
+            }
+            
+            // Filtrar apenas pedidos ativos (não cancelados, exceto se filtro específico)
+            if (currentFilter === 'all') {
+                filtered = filtered.filter(o => o.status !== 'cancelled');
+            }
+            
+            if (filtered.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state" style="grid-column: 1/-1;">
+                        <i class="fas fa-inbox"></i>
+                        <h3>Nenhum pedido encontrado</h3>
+                        <p>Os pedidos aparecerão aqui automaticamente</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            grid.innerHTML = filtered.map(order => createOrderCard(order)).join('');
+        }
+        
+        function createOrderCard(order) {
+            const status = order.status || 'pending';
+            const statusText = getStatusText(status);
+            const customerName = order.customer?.name || order.customerName || 'Cliente';
+            const orderType = order.orderType || order.type || 'balcao';
+            const orderTypeIcon = getOrderTypeIcon(orderType);
+            const orderTypeText = getOrderTypeText(orderType);
+            const timeElapsed = getTimeElapsed(order.createdAt || order.date);
+            const isUrgent = timeElapsed.minutes > 15;
+            
+            const items = (order.items || []).map(item => `
+                <div class="order-item">
+                    <div>
+                        <div class="item-name">
+                            <span class="item-qty">${item.quantity || 1}x</span>
+                            ${item.name || item.product?.name || 'Item'}
+                        </div>
+                        ${item.extras && item.extras.length > 0 ? 
+                            `<div class="item-extras">+ ${item.extras.map(e => e.name || e).join(', ')}</div>` : 
+                            ''
+                        }
+                        ${item.notes ? `<div class="item-extras">Obs: ${item.notes}</div>` : ''}
+                    </div>
+                </div>
+            `).join('');
+            
+            const total = order.total || order.items?.reduce((sum, i) => sum + (i.price * (i.quantity || 1)), 0) || 0;
+            
+            // Botões baseados no status
+            let actionButtons = '';
+            switch (status) {
+                case 'pending':
+                    actionButtons = `
+                        <button class="btn btn-success" onclick="updateOrderStatus('${order.id}', 'confirmed')">
+                            <i class="fas fa-check"></i> Confirmar
+                        </button>
+                        <button class="btn btn-danger" onclick="updateOrderStatus('${order.id}', 'cancelled')">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                    break;
+                case 'confirmed':
+                    actionButtons = `
+                        <button class="btn btn-warning" onclick="updateOrderStatus('${order.id}', 'preparing')">
+                            <i class="fas fa-fire"></i> Preparar
+                        </button>
+                    `;
+                    break;
+                case 'preparing':
+                    actionButtons = `
+                        <button class="btn btn-success" onclick="updateOrderStatus('${order.id}', 'ready')">
+                            <i class="fas fa-bell"></i> Pronto!
+                        </button>
+                    `;
+                    break;
+                case 'ready':
+                    actionButtons = `
+                        <button class="btn btn-primary" onclick="updateOrderStatus('${order.id}', 'delivered')">
+                            <i class="fas fa-check-double"></i> Entregue
+                        </button>
+                        <button class="btn btn-secondary" onclick="callCustomer('${order.id}', '${customerName}')">
+                            <i class="fas fa-bullhorn"></i> Chamar
+                        </button>
+                    `;
+                    break;
+                case 'delivered':
+                case 'cancelled':
+                    actionButtons = `
+                        <button class="btn btn-secondary" onclick="printOrder('${order.id}')">
+                            <i class="fas fa-print"></i> Imprimir
+                        </button>
+                    `;
+                    break;
+            }
+            
+            return `
+                <div class="order-card ${status}" data-order-id="${order.id}">
+                    <div class="order-header">
+                        <div>
+                            <div class="order-number">#${order.number || order.id.slice(-4)}</div>
+                            <div class="order-type">
+                                <i class="fas fa-${orderTypeIcon}"></i>
+                                ${orderTypeText}
+                            </div>
+                        </div>
+                        <span class="order-status-badge status-${status}">${statusText}</span>
+                    </div>
+                    
+                    <div class="order-body">
+                        <div class="order-customer">
+                            <div class="customer-avatar">${customerName.charAt(0).toUpperCase()}</div>
+                            <div class="customer-info">
+                                <h4>${customerName}</h4>
+                                <p>${order.customer?.phone || order.phone || ''}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="order-items">
+                            ${items}
+                        </div>
+                        
+                        <div class="order-time ${isUrgent ? 'urgent' : ''}">
+                            <i class="fas fa-clock"></i>
+                            ${timeElapsed.text}
+                            ${isUrgent ? ' URGENTE!' : ''}
+                        </div>
+                        
+                        <div class="order-total">
+                            R$ ${total.toFixed(2)}
+                        </div>
+                    </div>
+                    
+                    <div class="order-footer">
+                        ${actionButtons}
+                    </div>
+                </div>
+            `;
+        }
+        
+        async function updateOrderStatus(orderId, newStatus) {
+            try {
+                const orderRef = database.ref(`orders/${orderId}`);
+                await orderRef.update({
+                    status: newStatus,
+                    [`${newStatus}At`]: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                });
+                
+                showToast(`Pedido atualizado para: ${getStatusText(newStatus)}`, 'success');
+                
+                // Se ficou pronto, tocar som
+                if (newStatus === 'ready') {
+                    playNotificationSound();
+                }
+            } catch (error) {
+                console.error('Erro ao atualizar pedido:', error);
+                showToast('Erro ao atualizar pedido', 'error');
+            }
+        }
+        
+        function callCustomer(orderId, customerName) {
+            playNotificationSound();
+            showToast('Chamando ' + customerName + '!', 'info');
+            
+            // Mostrar alerta grande
+            if ('speechSynthesis' in window) {
+                var utterance = new SpeechSynthesisUtterance('Pedido pronto para ' + customerName);
+                utterance.lang = 'pt-BR';
+                utterance.rate = 0.9;
+                speechSynthesis.speak(utterance);
+            }
+        }
+        
+        function printOrder(orderId) {
+            const order = orders.find(o => o.id === orderId);
+            if (!order) return;
+            
+            // Criar janela de impressao
+            const printWindow = window.open('', '_blank');
+            const itemsHtml = (order.items || []).map(function(item) {
+                return '<div class="item">' + (item.quantity || 1) + 'x ' + item.name + ' - R$ ' + ((item.price || 0) * (item.quantity || 1)).toFixed(2) + '<\/div>';
+            }).join('');
+            
+            const html = '<!DOCTYPE html><html><head><title>Pedido #' + (order.number || order.id.slice(-4)) + '<\/title>' +
+                '<style>body { font-family: monospace; padding: 20px; } h1 { text-align: center; } .item { margin: 10px 0; } .total { font-size: 1.5em; font-weight: bold; margin-top: 20px; }<\/style>' +
+                '<\/head><body>' +
+                '<h1>BurgerPDV<\/h1>' +
+                '<h2>Pedido #' + (order.number || order.id.slice(-4)) + '<\/h2>' +
+                '<p>Cliente: ' + (order.customer?.name || order.customerName || 'Cliente') + '<\/p>' +
+                '<p>Data: ' + new Date(order.createdAt || order.date).toLocaleString('pt-BR') + '<\/p>' +
+                '<hr>' + itemsHtml + '<hr>' +
+                '<div class="total">Total: R$ ' + (order.total || 0).toFixed(2) + '<\/div>' +
+                '<\/body><\/html>';
+            
+            printWindow.document.write(html);
+            printWindow.document.close();
+            printWindow.print();
+        }
+        
+        // ========================================
+        // FUNCOES AUXILIARES
+        // ========================================
+        
+        function setupFilters() {
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentFilter = btn.dataset.status;
+                    renderOrders();
+                });
+            });
+        }
+        
+        function updateStats() {
+            const counts = {
+                all: orders.filter(o => o.status !== 'cancelled').length,
+                pending: orders.filter(o => o.status === 'pending').length,
+                confirmed: orders.filter(o => o.status === 'confirmed').length,
+                preparing: orders.filter(o => o.status === 'preparing').length,
+                ready: orders.filter(o => o.status === 'ready').length,
+                delivered: orders.filter(o => o.status === 'delivered').length
+            };
+            
+            // Header stats
+            document.getElementById('pending-count').textContent = counts.pending;
+            document.getElementById('preparing-count').textContent = counts.preparing;
+            document.getElementById('ready-count').textContent = counts.ready;
+            
+            // Filter counts
+            document.getElementById('all-count').textContent = counts.all;
+            document.getElementById('filter-pending-count').textContent = counts.pending;
+            document.getElementById('filter-confirmed-count').textContent = counts.confirmed;
+            document.getElementById('filter-preparing-count').textContent = counts.preparing;
+            document.getElementById('filter-ready-count').textContent = counts.ready;
+            document.getElementById('filter-delivered-count').textContent = counts.delivered;
+        }
+        
+        function getStatusText(status) {
+            const map = {
+                'pending': 'Pendente',
+                'confirmed': 'Confirmado',
+                'preparing': 'Preparando',
+                'ready': 'Pronto',
+                'delivered': 'Entregue',
+                'cancelled': 'Cancelado'
+            };
+            return map[status] || status;
+        }
+        
+        function getOrderTypeIcon(type) {
+            const map = {
+                'balcao': 'store',
+                'delivery': 'motorcycle',
+                'mesa': 'utensils',
+                'online': 'globe'
+            };
+            return map[type] || 'receipt';
+        }
+        
+        function getOrderTypeText(type) {
+            const map = {
+                'balcao': 'Balcão',
+                'delivery': 'Delivery',
+                'mesa': 'Mesa',
+                'online': 'Online'
+            };
+            return map[type] || type;
+        }
+        
+        function getTimeElapsed(dateString) {
+            if (!dateString) return { text: '--', minutes: 0 };
+            
+            const now = new Date();
+            const orderDate = new Date(dateString);
+            const diff = now - orderDate;
+            const minutes = Math.floor(diff / 60000);
+            const hours = Math.floor(minutes / 60);
+            
+            let text;
+            if (hours > 0) {
+                text = `${hours}h ${minutes % 60}min atrás`;
+            } else if (minutes > 0) {
+                text = `${minutes}min atrás`;
+            } else {
+                text = 'Agora';
+            }
+            
+            return { text, minutes };
+        }
+        
+        function updateConnectionStatus(connected) {
+            const statusEl = document.getElementById('connection-status');
+            const textEl = document.getElementById('connection-text');
+            
+            if (connected) {
+                statusEl.classList.remove('disconnected');
+                statusEl.classList.add('connected');
+                textEl.textContent = 'Conectado';
+            } else {
+                statusEl.classList.remove('connected');
+                statusEl.classList.add('disconnected');
+                textEl.textContent = 'Desconectado';
+            }
+        }
+        
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            localStorage.setItem('balcao_sound', soundEnabled);
+            updateSoundButton();
+            showToast(soundEnabled ? 'Som ativado' : 'Som desativado', 'info');
+        }
+        
+        function updateSoundButton() {
+            const btn = document.getElementById('sound-toggle');
+            if (soundEnabled) {
+                btn.innerHTML = '<i class="fas fa-volume-up"></i>';
+                btn.classList.remove('muted');
+            } else {
+                btn.innerHTML = '<i class="fas fa-volume-mute"></i>';
+                btn.classList.add('muted');
+            }
+        }
+        
+        function playNotificationSound() {
+            if (!soundEnabled) return;
+            
+            const audio = document.getElementById('notification-sound');
+            audio.currentTime = 0;
+            audio.play().catch(e => console.log('Audio play blocked:', e));
+        }
+        
+        function refreshOrders() {
+            showToast('Atualizando...', 'info');
+            // Firebase já atualiza em tempo real, mas força um refresh visual
+            renderOrders();
+            updateStats();
+        }
+        
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+            } else {
+                document.exitFullscreen();
+            }
+        }
+        
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
+                <span>${message}</span>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'toastIn 0.3s ease reverse';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+        
+        // ========================================
+        // INICIALIZACAO
+        // ========================================
+        
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,108 @@
+{
+  "name": "GO BURGER - Painel de Pedidos",
+  "short_name": "GO BURGER",
+  "description": "Painel Profissional de Gestão de Pedidos - GO BURGER",
+  "start_url": "/painel-pedidos.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#667eea",
+  "scope": "/",
+  "lang": "pt-BR",
+  "categories": ["business", "food", "productivity"],
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='20' fill='%23667eea'/%3E%3Ctext x='96' y='140' font-size='120' text-anchor='middle' fill='white'%3E📋%3C/text%3E%3C/svg%3E",
+      "sizes": "72x72",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='20' fill='%23667eea'/%3E%3Ctext x='96' y='140' font-size='120' text-anchor='middle' fill='white'%3E📋%3C/text%3E%3C/svg%3E",
+      "sizes": "96x96",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='20' fill='%23667eea'/%3E%3Ctext x='96' y='140' font-size='120' text-anchor='middle' fill='white'%3E📋%3C/text%3E%3C/svg%3E",
+      "sizes": "128x128",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='20' fill='%23667eea'/%3E%3Ctext x='96' y='140' font-size='120' text-anchor='middle' fill='white'%3E📋%3C/text%3E%3C/svg%3E",
+      "sizes": "144x144",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='20' fill='%23667eea'/%3E%3Ctext x='96' y='140' font-size='120' text-anchor='middle' fill='white'%3E📋%3C/text%3E%3C/svg%3E",
+      "sizes": "152x152",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='20' fill='%23667eea'/%3E%3Ctext x='96' y='140' font-size='120' text-anchor='middle' fill='white'%3E📋%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='50' fill='%23667eea'/%3E%3Ctext x='256' y='380' font-size='320' text-anchor='middle' fill='white'%3E📋%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 540 720'%3E%3Crect fill='%23667eea' width='540' height='720'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' fill='white' font-size='48' font-weight='bold'%3EGO BURGER%3C/text%3E%3Ctext x='50%25' y='60%25' text-anchor='middle' fill='white' font-size='24'%3EPainel de Pedidos%3C/text%3E%3C/svg%3E",
+      "sizes": "540x720",
+      "type": "image/svg+xml",
+      "form_factor": "narrow"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Pedidos Pendentes",
+      "short_name": "Pendentes",
+      "description": "Ver pedidos pendentes",
+      "url": "/painel-pedidos.html?filter=pending",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E⏰%3C/text%3E%3C/svg%3E",
+          "sizes": "96x96",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "Pedidos Prontos",
+      "short_name": "Prontos",
+      "description": "Ver pedidos prontos",
+      "url": "/painel-pedidos.html?filter=ready",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E✅%3C/text%3E%3C/svg%3E",
+          "sizes": "96x96",
+          "type": "image/svg+xml"
+        }
+      ]
+    },
+    {
+      "name": "Novo Pedido",
+      "short_name": "Novo",
+      "description": "Criar novo pedido",
+      "url": "/painel-pedidos.html?action=new",
+      "icons": [
+        {
+          "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E➕%3C/text%3E%3C/svg%3E",
+          "sizes": "96x96",
+          "type": "image/svg+xml"
+        }
+      ]
+    }
+  ],
+  "prefer_related_applications": false,
+  "related_applications": []
+}

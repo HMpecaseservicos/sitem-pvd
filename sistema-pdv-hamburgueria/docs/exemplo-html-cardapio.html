@@ -1,0 +1,289 @@
+<!-- 
+    ================================================================
+    EXEMPLO DE INTEGRAÇÃO NO HTML DO CARDÁPIO GO BURGER
+    ================================================================
+    
+    Este arquivo mostra EXATAMENTE onde adicionar o código
+    no HTML do cardápio digital (https://go-burguer.netlify.app/)
+-->
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GO BURGER - Cardápio Digital</title>
+    
+    <!-- Seus estilos existentes -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    
+    <!-- SEU CONTEÚDO EXISTENTE DO CARDÁPIO -->
+    <div id="app">
+        <!-- Cabeçalho, menu, produtos, etc. -->
+    </div>
+
+    <!-- SEUS SCRIPTS EXISTENTES -->
+    <script src="seu-script-existente.js"></script>
+
+    <!-- ========================================
+         ADICIONE ESTES SCRIPTS AQUI (ANTES DO </body>)
+         ======================================== -->
+
+    <!-- 1. Firebase SDK (OBRIGATÓRIO) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+    <!-- 2. Script de Integração com Sistema PDV -->
+    <script>
+        /**
+         * CONFIGURAÇÃO DO FIREBASE
+         * MESMA configuração do Sistema PDV
+         */
+        const firebaseConfig = {
+            apiKey: "AIzaSyBqJQd0YpxjndeUDLoBIDjw7WPpE42YI6s",
+            authDomain: "burgerpdv.firebaseapp.com",
+            databaseURL: "https://burgerpdv-default-rtdb.firebaseio.com",
+            projectId: "burgerpdv",
+            storageBucket: "burgerpdv.firebasestorage.app",
+            messagingSenderId: "810043325830",
+            appId: "1:810043325830:web:fcbdb9de2c6330633c4007"
+        };
+
+        // Inicializar Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+
+        const database = firebase.database();
+        const onlineOrdersRef = database.ref('online-orders');
+
+        /**
+         * Função principal: Envia pedido para o Sistema PDV
+         */
+        async function sendOrderToPDV(orderData) {
+            try {
+                console.log('📤 Enviando pedido para o PDV...', orderData);
+                
+                // Validações
+                if (!orderData.customer?.name) {
+                    throw new Error('Nome do cliente é obrigatório');
+                }
+                if (!orderData.customer?.phone) {
+                    throw new Error('Telefone do cliente é obrigatório');
+                }
+                if (!orderData.items?.length) {
+                    throw new Error('O pedido deve ter pelo menos um item');
+                }
+                
+                // Preparar pedido
+                const order = {
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                    
+                    customer: {
+                        name: orderData.customer.name,
+                        phone: orderData.customer.phone,
+                        address: orderData.customer.address || '',
+                        neighborhood: orderData.customer.neighborhood || '',
+                        complement: orderData.customer.complement || '',
+                        reference: orderData.customer.reference || ''
+                    },
+                    
+                    items: orderData.items.map(item => ({
+                        id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                        name: item.name,
+                        quantity: item.quantity || 1,
+                        price: parseFloat(item.price) || 0,
+                        extras: item.extras || [],
+                        observations: item.observations || ''
+                    })),
+                    
+                    subtotal: parseFloat(orderData.subtotal) || 0,
+                    deliveryFee: parseFloat(orderData.deliveryFee) || 0,
+                    discount: parseFloat(orderData.discount) || 0,
+                    total: parseFloat(orderData.total) || 0,
+                    
+                    paymentMethod: orderData.paymentMethod || 'Dinheiro',
+                    paymentStatus: 'pending',
+                    deliveryType: orderData.deliveryType || 'delivery',
+                    estimatedTime: orderData.estimatedTime || 45,
+                    observations: orderData.observations || '',
+                    status: 'pending',
+                    receivedBySystem: false,
+                    
+                    metadata: {
+                        platform: 'Cardápio Digital GO BURGER',
+                        url: window.location.href,
+                        userAgent: navigator.userAgent,
+                        screenSize: `${window.screen.width}x${window.screen.height}`
+                    }
+                };
+                
+                // Enviar para Firebase
+                const newOrderRef = await onlineOrdersRef.push(order);
+                const orderId = newOrderRef.key;
+                
+                console.log('✅ Pedido enviado com sucesso! ID:', orderId);
+                return orderId;
+                
+            } catch (error) {
+                console.error('❌ Erro ao enviar pedido:', error);
+                throw error;
+            }
+        }
+
+        /**
+         * Monitora status do pedido em tempo real
+         */
+        function watchOrderStatus(orderId, callback) {
+            const orderRef = database.ref(`online-orders/${orderId}`);
+            
+            orderRef.on('value', (snapshot) => {
+                const order = snapshot.val();
+                if (order) {
+                    callback(order);
+                }
+            });
+            
+            // Retornar função para parar de escutar
+            return () => orderRef.off();
+        }
+
+        // Expor funções globalmente
+        window.sendOrderToPDV = sendOrderToPDV;
+        window.watchOrderStatus = watchOrderStatus;
+
+        console.log('🍔 GO BURGER - Integração PDV carregada!');
+    </script>
+
+    <!-- 3. SEU CÓDIGO DE CHECKOUT/FINALIZAÇÃO -->
+    <script>
+        /**
+         * EXEMPLO: Modifique seu botão de "Finalizar Pedido"
+         */
+        
+        // Encontre seu botão de finalizar
+        const btnFinalizarPedido = document.getElementById('btn-finalizar'); // Use o ID correto
+        
+        if (btnFinalizarPedido) {
+            btnFinalizarPedido.addEventListener('click', async function(e) {
+                e.preventDefault();
+                
+                // COLETE OS DADOS DO SEU FORMULÁRIO
+                // Adapte os IDs para os seus campos
+                const orderData = {
+                    customer: {
+                        name: document.getElementById('customer-name').value,
+                        phone: document.getElementById('customer-phone').value,
+                        address: document.getElementById('customer-address').value,
+                        neighborhood: document.getElementById('customer-neighborhood')?.value || '',
+                        complement: document.getElementById('customer-complement')?.value || '',
+                        reference: document.getElementById('customer-reference')?.value || ''
+                    },
+                    
+                    // SEU CARRINHO DE COMPRAS
+                    // Adapte para sua estrutura de carrinho
+                    items: window.carrinho.map(item => ({
+                        name: item.nome,
+                        quantity: item.quantidade,
+                        price: item.preco,
+                        extras: item.adicionais || [],
+                        observations: item.observacoes || ''
+                    })),
+                    
+                    // VALORES
+                    subtotal: window.calcularSubtotal(), // Use sua função
+                    deliveryFee: window.taxaEntrega || 5.00,
+                    discount: window.desconto || 0,
+                    total: window.calcularTotal(), // Use sua função
+                    
+                    // FORMA DE PAGAMENTO
+                    paymentMethod: document.querySelector('input[name="payment"]:checked')?.value || 'Dinheiro',
+                    
+                    // TIPO DE ENTREGA
+                    deliveryType: document.querySelector('input[name="delivery"]:checked')?.value || 'delivery',
+                    
+                    // TEMPO ESTIMADO
+                    estimatedTime: 45,
+                    
+                    // OBSERVAÇÕES
+                    observations: document.getElementById('order-observations')?.value || ''
+                };
+                
+                try {
+                    // Desabilitar botão durante envio
+                    btnFinalizarPedido.disabled = true;
+                    btnFinalizarPedido.textContent = '⏳ Enviando pedido...';
+                    
+                    // ENVIAR PEDIDO PARA O SISTEMA PDV
+                    const orderId = await sendOrderToPDV(orderData);
+                    
+                    // SUCESSO! 🎉
+                    alert(`✅ Pedido enviado com sucesso!\n\nNúmero do pedido: ${orderId}\n\nVocê receberá atualizações em tempo real!`);
+                    
+                    // Limpar carrinho
+                    window.carrinho = [];
+                    
+                    // Redirecionar para página de acompanhamento
+                    // (crie esta página seguindo o exemplo na documentação)
+                    window.location.href = `acompanhar-pedido.html?id=${orderId}`;
+                    
+                    // OU, se não tiver página de acompanhamento, monitore aqui:
+                    /*
+                    watchOrderStatus(orderId, (order) => {
+                        console.log('Status atualizado:', order.status);
+                        
+                        if (order.status === 'confirmed') {
+                            // Mostrar notificação "Pedido confirmado!"
+                        }
+                    });
+                    */
+                    
+                } catch (error) {
+                    // ERRO
+                    alert('❌ Erro ao enviar pedido:\n' + error.message);
+                    console.error(error);
+                    
+                    // Reabilitar botão
+                    btnFinalizarPedido.disabled = false;
+                    btnFinalizarPedado.textContent = 'Finalizar Pedido';
+                }
+            });
+        }
+    </script>
+
+</body>
+</html>
+
+<!-- 
+    ================================================================
+    CHECKLIST DE INTEGRAÇÃO
+    ================================================================
+    
+    ✅ Adicionei Firebase SDK
+    ✅ Adicionei script de integração (sendOrderToPDV)
+    ✅ Modifiquei meu botão de finalizar pedido
+    ✅ Adaptei os IDs dos campos para meus campos reais
+    ✅ Testei enviar um pedido
+    ✅ Verificar no Sistema PDV se pedido chegou
+    
+    ================================================================
+    PRÓXIMOS PASSOS
+    ================================================================
+    
+    1. Criar página de acompanhamento (ver documentação)
+    2. Configurar segurança do Firebase
+    3. Testar em produção
+    4. Treinar equipe
+    
+    ================================================================
+    DÚVIDAS?
+    ================================================================
+    
+    📖 Documentação completa: docs/INTEGRACAO-CARDAPIO-DIGITAL.md
+    🚀 Guia rápido: docs/INSTALACAO-RAPIDA.md
+    💬 WhatsApp: (66) 99912-2668
+    
+-->

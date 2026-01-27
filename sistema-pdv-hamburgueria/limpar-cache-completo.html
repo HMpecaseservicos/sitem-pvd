@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Limpeza Completa de Cache</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 { color: #667eea; }
+        .btn {
+            background: #667eea;
+            color: white;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .btn:hover { background: #5a67d8; }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            background: #f3f4f6;
+        }
+        .success { background: #d1fae5; color: #065f46; }
+        .error { background: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body>
+    <h1>🧹 Limpeza Completa de Cache</h1>
+    <p>Esta ferramenta irá limpar completamente o cache e service workers do sistema.</p>
+    
+    <button class="btn" onclick="limparTudo()">Limpar Tudo e Recarregar</button>
+    <button class="btn" onclick="abrirPainel()">Abrir Painel Limpo</button>
+    
+    <div id="status" class="status"></div>
+    
+    <script>
+        async function limparTudo() {
+            const status = document.getElementById('status');
+            status.innerHTML = '<p>🔄 Limpando...</p>';
+            
+            try {
+                // 1. Desregistrar todos os Service Workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (let registration of registrations) {
+                        await registration.unregister();
+                        console.log('SW desregistrado:', registration.scope);
+                    }
+                    status.innerHTML += '<p>✅ Service Workers desregistrados</p>';
+                }
+                
+                // 2. Limpar todos os caches
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(cacheNames.map(name => caches.delete(name)));
+                    status.innerHTML += '<p>✅ ' + cacheNames.length + ' caches removidos</p>';
+                }
+                
+                // 3. Limpar localStorage
+                localStorage.clear();
+                status.innerHTML += '<p>✅ LocalStorage limpo</p>';
+                
+                // 4. Limpar sessionStorage
+                sessionStorage.clear();
+                status.innerHTML += '<p>✅ SessionStorage limpo</p>';
+                
+                // 5. Limpar cookies do site (opcional)
+                document.cookie.split(";").forEach(function(c) { 
+                    document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+                });
+                status.innerHTML += '<p>✅ Cookies limpos</p>';
+                
+                status.classList.add('success');
+                status.innerHTML += '<h3>✅ Limpeza Concluída!</h3><p>Recarregando em 2 segundos...</p>';
+                
+                setTimeout(() => {
+                    window.location.reload(true);
+                }, 2000);
+                
+            } catch (error) {
+                status.classList.add('error');
+                status.innerHTML = '<h3>❌ Erro</h3><p>' + error.message + '</p>';
+                console.error('Erro ao limpar:', error);
+            }
+        }
+        
+        function abrirPainel() {
+            // Adicionar timestamp para forçar reload
+            const url = 'painel-pedidos.html?v=' + Date.now();
+            window.open(url, '_blank');
+        }
+        
+        // Auto-executar ao carregar
+        window.addEventListener('load', function() {
+            document.getElementById('status').innerHTML = 
+                '<p>⚡ Pronto para limpar</p>' +
+                '<p style="font-size:12px;color:#666;">Última execução: ' + new Date().toLocaleString('pt-BR') + '</p>';
+        });
+    </script>
+</body>
+</html>
