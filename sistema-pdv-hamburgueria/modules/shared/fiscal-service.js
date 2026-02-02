@@ -308,10 +308,21 @@ class FiscalService {
     
     /**
      * Carrega configurações fiscais do banco de dados
+     * @param {boolean} forceFirebase - Se true, tenta buscar direto do Firebase
      */
-    async loadConfig() {
+    async loadConfig(forceFirebase = false) {
         try {
-            const settings = await getFromDatabase('settings');
+            let settings = await getFromDatabase('settings');
+            
+            // Se não encontrou no IndexedDB e Firebase está disponível, busca do Firebase
+            if ((!settings || Object.keys(settings).length === 0) && window.firebaseService && !window.firebaseService.offlineMode) {
+                console.log('📡 Buscando configurações do Firebase...');
+                try {
+                    settings = await window.firebaseService.get('settings');
+                } catch (fbError) {
+                    console.warn('⚠️ Erro ao buscar settings do Firebase:', fbError);
+                }
+            }
             
             // Suporta tanto array quanto objeto
             let fiscalConfig = null;
@@ -342,7 +353,8 @@ class FiscalService {
                 console.log('✅ Configurações fiscais carregadas:', {
                     cnpj: this.config.cnpj ? '***' + this.config.cnpj.slice(-4) : 'N/A',
                     razaoSocial: this.config.razaoSocial || 'N/A',
-                    ie: this.config.inscricaoEstadual ? '***' + this.config.inscricaoEstadual.slice(-4) : 'N/A'
+                    ie: this.config.inscricaoEstadual ? '***' + this.config.inscricaoEstadual.slice(-4) : 'N/A',
+                    gateway: this.config.gateway?.provider || 'N/A'
                 });
             } else {
                 this.config = { ...DEFAULT_FISCAL_CONFIG };
@@ -353,6 +365,19 @@ class FiscalService {
             console.error('Erro ao carregar configurações fiscais:', error);
             this.config = { ...DEFAULT_FISCAL_CONFIG };
         }
+    }
+    
+    /**
+     * Recarrega configurações e reinicializa gateway
+     * Chamado após sincronização do Firebase
+     */
+    async refreshConfig() {
+        console.log('🔄 [FISCAL] Recarregando configurações...');
+        await this.loadConfig(true);
+        this.initializeGateway();
+        
+        const gatewayStatus = this.isGatewayReady();
+        console.log(`📡 [FISCAL] Gateway atualizado: ${gatewayStatus.ready ? 'PRONTO (' + (this.config?.gateway?.provider || 'mock') + ')' : gatewayStatus.reason}`);
     }
     
     /**

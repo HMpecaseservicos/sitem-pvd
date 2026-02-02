@@ -735,6 +735,12 @@ window.addEventListener('userAuthenticated', async () => {
     // DEPOIS sincronizar dados do Firebase (trazer dados novos)
     console.log('⬇️ Baixando dados do Firebase...');
     await firebaseService.syncFromCloud();
+    
+    // Notificar FiscalService para recarregar configurações
+    if (window.fiscalService && typeof window.fiscalService.refreshConfig === 'function') {
+        console.log('🔄 Atualizando configurações fiscais após sync...');
+        await window.fiscalService.refreshConfig();
+    }
 });
 
 window.addEventListener('userSignedOut', () => {
