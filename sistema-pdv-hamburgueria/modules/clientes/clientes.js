@@ -46,6 +46,12 @@ export default class ClientesModule {
             regular: { label: 'Regular', color: '#28a745', minSpent: 200 },
             new: { label: 'Novo', color: '#17a2b8', minSpent: 0 }
         };
+
+        // Lista de Transmissão WhatsApp
+        this.broadcastList = [];
+        this.broadcastQueue = [];
+        this.currentBroadcastIndex = 0;
+        this.BATCH_SIZE = 5; // Enviar de 5 em 5
         
         this.init();
     }
@@ -84,7 +90,22 @@ export default class ClientesModule {
             // Botão Exportar
             if (e.target.id === 'export-customers' || e.target.closest('#export-customers')) {
                 e.preventDefault();
-                this.exportCustomers();
+                console.log('📥 Botão Exportar clicado');
+                if (window.clientesModule) {
+                    window.clientesModule.exportCustomers();
+                }
+                return;
+            }
+
+            // Botão Lista de Transmissão WhatsApp
+            if (e.target.id === 'whatsapp-broadcast' || e.target.closest('#whatsapp-broadcast')) {
+                e.preventDefault();
+                console.log('📱 Botão Lista de Transmissão clicado');
+                if (window.clientesModule) {
+                    window.clientesModule.showBroadcastModal();
+                } else {
+                    console.error('❌ window.clientesModule não encontrado!');
+                }
                 return;
             }
         });
@@ -122,7 +143,6 @@ export default class ClientesModule {
             });
         }
         
-        console.log('✅ Event listeners configurados com event delegation');
     }
 
     async loadCustomers() {
@@ -286,7 +306,6 @@ export default class ClientesModule {
             </tr>
         `).join('');
         
-        console.log(`📋 ${customers.length} clientes renderizados`);
     }
 
     updatePagination(pagination) {
@@ -353,13 +372,6 @@ export default class ClientesModule {
                 totalOrders: totalOrderCount
             };
 
-            console.log('📊 [CLIENTES] Estatísticas calculadas:', {
-                clientes: stats.totalCustomers,
-                pedidos: stats.totalOrders,
-                receita: stats.totalRevenue,
-                ticketMedio: stats.averageOrderValue
-            });
-
             this.displayStatistics(stats);
         } catch (error) {
             console.error('Erro ao calcular estatísticas:', error);
@@ -373,19 +385,14 @@ export default class ClientesModule {
             avgCustomerValue: document.getElementById('avg-customer-value')
         };
 
-        console.log('📊 [CLIENTES] Atualizando estatísticas:', stats);
-
         if (elements.totalCustomers) {
             elements.totalCustomers.textContent = stats.totalCustomers;
-            console.log('✅ Total de clientes atualizado:', stats.totalCustomers);
         }
         if (elements.activeCustomers) {
             elements.activeCustomers.textContent = stats.activeCustomers;
-            console.log('✅ Clientes ativos atualizado:', stats.activeCustomers);
         }
         if (elements.avgCustomerValue) {
             elements.avgCustomerValue.textContent = formatCurrency(stats.averageOrderValue);
-            console.log('✅ Ticket médio atualizado:', stats.averageOrderValue);
         }
     }
 
@@ -986,6 +993,484 @@ export default class ClientesModule {
         } catch (error) {
             console.error('Erro ao abrir WhatsApp:', error);
             showToast('Erro ao abrir WhatsApp', 'error');
+        }
+    }
+
+    /**
+     * ===========================================
+     * LISTA DE TRANSMISSÃO WHATSAPP
+     * ===========================================
+     * Permite enviar mensagens para múltiplos clientes
+     * seguindo as normas do WhatsApp (abertura individual)
+     */
+
+    /**
+     * Exibe o modal da lista de transmissão
+     */
+    async showBroadcastModal() {
+        try {
+            const customers = await getFromDatabase('customers');
+            const customersWithPhone = customers.filter(c => c.phone && c.active !== false);
+
+            if (customersWithPhone.length === 0) {
+                showToast('Nenhum cliente com telefone cadastrado', 'warning');
+                return;
+            }
+
+            const modal = document.createElement('div');
+            modal.className = 'modal modal-active';
+            modal.id = 'broadcast-modal';
+            modal.innerHTML = `
+                <div class="modal-content broadcast-modal">
+                    <div class="modal-header">
+                        <h2><i class="fab fa-whatsapp"></i> Lista de Transmissão WhatsApp</h2>
+                        <button class="close-modal">&times;</button>
+                    </div>
+                    
+                    <div class="modal-body">
+                        <div class="broadcast-info">
+                            <i class="fas fa-info-circle"></i>
+                            <p>Seguindo as políticas do WhatsApp, cada mensagem será enviada individualmente. 
+                               O sistema abrirá uma janela para cada cliente selecionado.</p>
+                        </div>
+
+                        <div class="broadcast-message-section">
+                            <h4>Mensagem para Enviar</h4>
+                            <div class="form-group">
+                                <label for="broadcast-message">Mensagem:</label>
+                                <textarea id="broadcast-message" rows="4" 
+                                    placeholder="Digite sua mensagem aqui... Use {nome} para personalizar com o nome do cliente.">Olá {nome}! 🍔
+
+Temos novidades especiais para você! Venha conferir nosso cardápio.
+
+Aguardamos sua visita!</textarea>
+                            </div>
+                            <div class="message-variables">
+                                <small>Variáveis disponíveis: <code>{nome}</code> - Nome do cliente</small>
+                            </div>
+                        </div>
+
+                        <div class="broadcast-filters">
+                            <h4>Filtrar Clientes</h4>
+                            <div class="filter-row">
+                                <div class="form-group">
+                                    <label>Segmento:</label>
+                                    <select id="broadcast-segment-filter">
+                                        <option value="">Todos os segmentos</option>
+                                        <option value="vip">VIP</option>
+                                        <option value="regular">Regular</option>
+                                        <option value="new">Novo</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label>Newsletter:</label>
+                                    <select id="broadcast-newsletter-filter">
+                                        <option value="">Todos</option>
+                                        <option value="true">Aceita receber</option>
+                                        <option value="false">Não aceita</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="broadcast-selection">
+                            <div class="selection-header">
+                                <h4>Selecionar Clientes (<span id="selected-count">0</span>/${customersWithPhone.length})</h4>
+                                <div class="selection-actions">
+                                    <button class="btn btn-sm btn-secondary" id="select-all-broadcast">
+                                        <i class="fas fa-check-double"></i> Selecionar Todos
+                                    </button>
+                                    <button class="btn btn-sm btn-secondary" id="deselect-all-broadcast">
+                                        <i class="fas fa-times"></i> Limpar Seleção
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="customers-list-broadcast" id="broadcast-customers-list">
+                                ${customersWithPhone.map(customer => `
+                                    <label class="customer-checkbox-item" data-segment="${customer.segment || 'new'}" data-newsletter="${customer.newsletter || false}">
+                                        <input type="checkbox" name="broadcast-customer" value="${customer.id}" 
+                                               data-phone="${customer.phone}" data-name="${customer.name}">
+                                        <div class="customer-checkbox-info">
+                                            <strong>${customer.name}</strong>
+                                            <span>${formatPhone(customer.phone)}</span>
+                                            <span class="segment-mini ${customer.segment || 'new'}">${this.customerSegments[customer.segment]?.label || 'Novo'}</span>
+                                            ${customer.newsletter ? '<i class="fas fa-envelope text-success" title="Aceita newsletter"></i>' : ''}
+                                        </div>
+                                    </label>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="modal-footer">
+                        <div class="broadcast-status" id="broadcast-status" style="display: none;">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="broadcast-progress"></div>
+                            </div>
+                            <span id="broadcast-progress-text">0 de 0 enviados</span>
+                        </div>
+                        <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">
+                            Cancelar
+                        </button>
+                        <button type="button" class="btn btn-success" id="start-broadcast" disabled>
+                            <i class="fab fa-whatsapp"></i> Iniciar Envio (<span id="btn-selected-count">0</span>)
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // Adicionar estilos inline
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 10000;
+            `;
+
+            document.body.appendChild(modal);
+
+            // Configurar event listeners do modal
+            this.setupBroadcastModalListeners(modal, customersWithPhone);
+
+        } catch (error) {
+            console.error('Erro ao abrir lista de transmissão:', error);
+            showToast('Erro ao abrir lista de transmissão', 'error');
+        }
+    }
+
+    /**
+     * Configura os event listeners do modal de transmissão
+     */
+    setupBroadcastModalListeners(modal, customers) {
+        // Fechar modal
+        modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
+
+        // Atualizar contagem de selecionados
+        const updateSelectedCount = () => {
+            const checked = modal.querySelectorAll('input[name="broadcast-customer"]:checked').length;
+            modal.querySelector('#selected-count').textContent = checked;
+            modal.querySelector('#btn-selected-count').textContent = checked;
+            modal.querySelector('#start-broadcast').disabled = checked === 0;
+        };
+
+        // Checkboxes individuais
+        modal.querySelectorAll('input[name="broadcast-customer"]').forEach(cb => {
+            cb.addEventListener('change', updateSelectedCount);
+        });
+
+        // Selecionar todos
+        modal.querySelector('#select-all-broadcast').addEventListener('click', () => {
+            modal.querySelectorAll('.customer-checkbox-item:not([style*="display: none"]) input[name="broadcast-customer"]').forEach(cb => {
+                cb.checked = true;
+            });
+            updateSelectedCount();
+        });
+
+        // Desmarcar todos
+        modal.querySelector('#deselect-all-broadcast').addEventListener('click', () => {
+            modal.querySelectorAll('input[name="broadcast-customer"]').forEach(cb => {
+                cb.checked = false;
+            });
+            updateSelectedCount();
+        });
+
+        // Filtros
+        const applyFilters = () => {
+            const segmentFilter = modal.querySelector('#broadcast-segment-filter').value;
+            const newsletterFilter = modal.querySelector('#broadcast-newsletter-filter').value;
+
+            modal.querySelectorAll('.customer-checkbox-item').forEach(item => {
+                let show = true;
+
+                if (segmentFilter && item.dataset.segment !== segmentFilter) {
+                    show = false;
+                }
+
+                if (newsletterFilter) {
+                    const wantsNewsletter = item.dataset.newsletter === 'true';
+                    if (newsletterFilter === 'true' && !wantsNewsletter) show = false;
+                    if (newsletterFilter === 'false' && wantsNewsletter) show = false;
+                }
+
+                item.style.display = show ? '' : 'none';
+                if (!show) {
+                    item.querySelector('input').checked = false;
+                }
+            });
+
+            updateSelectedCount();
+        };
+
+        modal.querySelector('#broadcast-segment-filter').addEventListener('change', applyFilters);
+        modal.querySelector('#broadcast-newsletter-filter').addEventListener('change', applyFilters);
+
+        // Iniciar envio
+        modal.querySelector('#start-broadcast').addEventListener('click', () => {
+            this.startBroadcast(modal);
+        });
+    }
+
+    /**
+     * Inicia o envio da lista de transmissão
+     */
+    async startBroadcast(modal) {
+        const message = modal.querySelector('#broadcast-message').value.trim();
+        if (!message) {
+            showToast('Digite uma mensagem para enviar', 'error');
+            return;
+        }
+
+        const selectedCheckboxes = modal.querySelectorAll('input[name="broadcast-customer"]:checked');
+        if (selectedCheckboxes.length === 0) {
+            showToast('Selecione pelo menos um cliente', 'error');
+            return;
+        }
+
+        // Montar fila de envio
+        this.broadcastQueue = Array.from(selectedCheckboxes).map(cb => ({
+            id: cb.value,
+            phone: cb.dataset.phone,
+            name: cb.dataset.name
+        }));
+
+        this.currentBroadcastIndex = 0;
+
+        // Mostrar status de progresso
+        const statusDiv = modal.querySelector('#broadcast-status');
+        statusDiv.style.display = 'flex';
+        modal.querySelector('#start-broadcast').disabled = true;
+        modal.querySelector('#start-broadcast').innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+
+        // Mostrar instruções
+        const totalBatches = Math.ceil(this.broadcastQueue.length / this.BATCH_SIZE);
+        showToast(`Iniciando envio para ${this.broadcastQueue.length} clientes em ${totalBatches} lotes de ${this.BATCH_SIZE}.`, 'info');
+
+        // Iniciar processo de envio em lotes
+        await this.processNextBatch(modal, message);
+    }
+
+    /**
+     * Processa o próximo lote de clientes (5 por vez)
+     */
+    async processNextBatch(modal, messageTemplate) {
+        if (this.currentBroadcastIndex >= this.broadcastQueue.length) {
+            // Finalizado!
+            this.finishBroadcast(modal);
+            return;
+        }
+
+        // Calcular lote atual
+        const batchStart = this.currentBroadcastIndex;
+        const batchEnd = Math.min(batchStart + this.BATCH_SIZE, this.broadcastQueue.length);
+        const currentBatch = this.broadcastQueue.slice(batchStart, batchEnd);
+        const batchNumber = Math.floor(batchStart / this.BATCH_SIZE) + 1;
+        const totalBatches = Math.ceil(this.broadcastQueue.length / this.BATCH_SIZE);
+
+        // Atualizar progresso
+        const progress = (batchEnd / this.broadcastQueue.length) * 100;
+        modal.querySelector('#broadcast-progress').style.width = `${progress}%`;
+        modal.querySelector('#broadcast-progress-text').textContent = 
+            `Lote ${batchNumber}/${totalBatches} - Enviando ${currentBatch.length} mensagens...`;
+
+        // Abrir WhatsApp para cada cliente do lote
+        for (const customer of currentBatch) {
+            const personalizedMessage = messageTemplate.replace(/{nome}/gi, customer.name);
+            this.openWhatsAppForBroadcast(customer.phone, personalizedMessage);
+            // Pequeno delay entre cada abertura para não sobrecarregar
+            await new Promise(resolve => setTimeout(resolve, 300));
+        }
+
+        this.currentBroadcastIndex = batchEnd;
+
+        // Verificar se há mais lotes
+        if (this.currentBroadcastIndex < this.broadcastQueue.length) {
+            const remainingCustomers = this.broadcastQueue.length - this.currentBroadcastIndex;
+            const nextBatchSize = Math.min(this.BATCH_SIZE, remainingCustomers);
+            const nextNames = this.broadcastQueue
+                .slice(this.currentBroadcastIndex, this.currentBroadcastIndex + 3)
+                .map(c => c.name)
+                .join(', ');
+            
+            modal.querySelector('#broadcast-progress-text').textContent = 
+                `Lote ${batchNumber}/${totalBatches} concluído! Aguardando...`;
+
+            setTimeout(() => {
+                const continueMsg = `✅ Lote ${batchNumber} enviado (${currentBatch.length} clientes)!\n\n` +
+                    `Próximo lote: ${nextBatchSize} clientes\n` +
+                    `(${nextNames}${remainingCustomers > 3 ? '...' : ''})\n\n` +
+                    `Restam ${remainingCustomers} clientes.\n\n` +
+                    `Clique OK para enviar o próximo lote ou Cancelar para parar.`;
+                
+                if (confirm(continueMsg)) {
+                    this.processNextBatch(modal, messageTemplate);
+                } else {
+                    this.finishBroadcast(modal, true);
+                }
+            }, 500);
+        } else {
+            this.finishBroadcast(modal);
+        }
+    }
+
+    /**
+     * Processa o próximo item da fila de transmissão (LEGADO - mantido para compatibilidade)
+     */
+    async processNextBroadcast(modal, messageTemplate) {
+        // Redirecionar para o novo método de lotes
+        await this.processNextBatch(modal, messageTemplate);
+    }
+
+    /**
+     * Abre o WhatsApp para um cliente da lista de transmissão
+     */
+    openWhatsAppForBroadcast(phone, message) {
+        // Limpar telefone
+        const cleanPhone = phone.replace(/\D/g, '');
+        
+        let fullPhone = cleanPhone;
+        if (cleanPhone.length === 11) {
+            fullPhone = '55' + cleanPhone;
+        } else if (cleanPhone.length === 10) {
+            fullPhone = '55' + cleanPhone.substring(0, 2) + '9' + cleanPhone.substring(2);
+        }
+
+        const whatsappUrl = `https://wa.me/${fullPhone}?text=${encodeURIComponent(message)}`;
+        window.open(whatsappUrl, '_blank');
+
+        console.log(`📱 Lista de Transmissão: Abrindo WhatsApp para ${phone}`);
+    }
+
+    /**
+     * Finaliza o processo de lista de transmissão
+     */
+    finishBroadcast(modal, cancelled = false) {
+        const sent = cancelled ? this.currentBroadcastIndex : this.broadcastQueue.length;
+        const total = this.broadcastQueue.length;
+
+        modal.querySelector('#broadcast-progress').style.width = '100%';
+        modal.querySelector('#broadcast-progress-text').textContent = 
+            cancelled ? `Cancelado - ${sent} de ${total} enviados` : `Concluído! ${total} mensagens enviadas`;
+
+        modal.querySelector('#start-broadcast').innerHTML = '<i class="fas fa-check"></i> Finalizado';
+        modal.querySelector('#start-broadcast').className = 'btn btn-primary';
+        modal.querySelector('#start-broadcast').disabled = false;
+        modal.querySelector('#start-broadcast').onclick = () => modal.remove();
+
+        // Salvar log de transmissão
+        this.saveBroadcastLog(sent, total, cancelled);
+
+        showToast(
+            cancelled 
+                ? `Lista de transmissão cancelada. ${sent} mensagens enviadas.` 
+                : `Lista de transmissão concluída! ${total} mensagens enviadas.`,
+            cancelled ? 'warning' : 'success'
+        );
+
+        // Limpar fila
+        this.broadcastQueue = [];
+        this.currentBroadcastIndex = 0;
+    }
+
+    /**
+     * Salva log da transmissão para histórico
+     */
+    async saveBroadcastLog(sent, total, cancelled) {
+        try {
+            const log = {
+                id: generateId(),
+                type: 'whatsapp-broadcast',
+                date: new Date().toISOString(),
+                totalRecipients: total,
+                sentCount: sent,
+                cancelled: cancelled,
+                recipients: this.broadcastQueue.map(c => ({
+                    id: c.id,
+                    name: c.name,
+                    phone: c.phone
+                }))
+            };
+
+            // Salvar no banco de logs
+            await saveToDatabase('broadcast-logs', log);
+            console.log('📋 Log de transmissão salvo:', log);
+        } catch (error) {
+            console.error('Erro ao salvar log de transmissão:', error);
+        }
+    }
+
+    /**
+     * Visualiza histórico de transmissões
+     */
+    async showBroadcastHistory() {
+        try {
+            const logs = await getFromDatabase('broadcast-logs') || [];
+            
+            if (logs.length === 0) {
+                showToast('Nenhuma transmissão realizada ainda', 'info');
+                return;
+            }
+
+            const modal = document.createElement('div');
+            modal.className = 'modal modal-active';
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2><i class="fas fa-history"></i> Histórico de Transmissões</h2>
+                        <button class="close-modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Enviados</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${logs.sort((a, b) => new Date(b.date) - new Date(a.date)).map(log => `
+                                    <tr>
+                                        <td>${formatDateTime(log.date)}</td>
+                                        <td>${log.sentCount}</td>
+                                        <td>${log.totalRecipients}</td>
+                                        <td>
+                                            <span class="badge ${log.cancelled ? 'badge-warning' : 'badge-success'}">
+                                                ${log.cancelled ? 'Cancelado' : 'Concluído'}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">Fechar</button>
+                    </div>
+                </div>
+            `;
+
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.5); display: flex; align-items: center;
+                justify-content: center; z-index: 10000;
+            `;
+
+            document.body.appendChild(modal);
+            modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+        } catch (error) {
+            console.error('Erro ao carregar histórico:', error);
+            showToast('Erro ao carregar histórico', 'error');
         }
     }
 

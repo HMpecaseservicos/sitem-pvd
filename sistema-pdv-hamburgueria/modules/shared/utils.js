@@ -67,6 +67,9 @@ export function formatNumber(value, decimals = 2) {
 }
 
 export function formatDateTime(date = new Date()) {
+    const d = new Date(date);
+    // Proteção contra Invalid Date
+    if (isNaN(d.getTime())) return '';
     return new Intl.DateTimeFormat('pt-BR', {
         day: '2-digit',
         month: '2-digit',
@@ -74,22 +77,28 @@ export function formatDateTime(date = new Date()) {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit'
-    }).format(new Date(date));
+    }).format(d);
 }
 
 export function formatTime(date = new Date()) {
+    const d = new Date(date);
+    // Proteção contra Invalid Date
+    if (isNaN(d.getTime())) return '';
     return new Intl.DateTimeFormat('pt-BR', {
         hour: '2-digit',
         minute: '2-digit'
-    }).format(new Date(date));
+    }).format(d);
 }
 
 export function formatDate(date = new Date()) {
+    const d = new Date(date);
+    // Proteção contra Invalid Date
+    if (isNaN(d.getTime())) return '';
     return new Intl.DateTimeFormat('pt-BR', {
         day: '2-digit',
         month: '2-digit',
         year: 'numeric'
-    }).format(new Date(date));
+    }).format(d);
 }
 
 // === GERAÇÃO DE IDs ===

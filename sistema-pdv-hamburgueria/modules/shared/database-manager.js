@@ -10,7 +10,7 @@
 class DatabaseManager {
     constructor() {
         this.dbName = 'PDVHamburgueriaDB';
-        this.dbVersion = 6; // v6: Adicionar deleted_products e price_history para módulo Cardápio v3.0
+        this.dbVersion = 7; // v7: Adicionar fiscal_queue e fiscal_logs para módulo Fiscal
         this.db = null;
         this.isInitialized = false;
         
@@ -20,7 +20,8 @@ class DatabaseManager {
         
         // Sistema de migrações
         this.migrations = {
-            1: this.migrateV1ToV2.bind(this)
+            1: this.migrateV1ToV2.bind(this),
+            6: this.migrateV6ToV7.bind(this) // Adiciona stores fiscais
         };
         
         // Configuração das stores
@@ -119,6 +120,24 @@ class DatabaseManager {
                     { name: 'productId', keyPath: 'productId', unique: false },
                     { name: 'changedAt', keyPath: 'changedAt', unique: false },
                     { name: 'changedBy', keyPath: 'changedBy', unique: false }
+                ]
+            },
+            fiscal_queue: {
+                keyPath: 'orderId',
+                autoIncrement: false,
+                indexes: [
+                    { name: 'status', keyPath: 'status', unique: false },
+                    { name: 'queuedAt', keyPath: 'queuedAt', unique: false },
+                    { name: 'processedAt', keyPath: 'processedAt', unique: false }
+                ]
+            },
+            fiscal_logs: {
+                keyPath: 'id',
+                autoIncrement: false,
+                indexes: [
+                    { name: 'orderId', keyPath: 'orderId', unique: false },
+                    { name: 'action', keyPath: 'action', unique: false },
+                    { name: 'timestamp', keyPath: 'timestamp', unique: false }
                 ]
             }
         };
@@ -826,6 +845,31 @@ class DatabaseManager {
         //     const store = db.createObjectStore('promotions', { keyPath: 'id' });
         //     store.createIndex('active', 'active', { unique: false });
         // }
+    }
+    
+    /**
+     * Migração v6 para v7 - Adicionar stores fiscais
+     */
+    migrateV6ToV7(db, transaction) {
+        console.log('Executando migração v6 -> v7: Adicionando stores fiscais');
+        
+        // Criar fiscal_queue
+        if (!db.objectStoreNames.contains('fiscal_queue')) {
+            const fiscalQueueStore = db.createObjectStore('fiscal_queue', { keyPath: 'orderId' });
+            fiscalQueueStore.createIndex('status', 'status', { unique: false });
+            fiscalQueueStore.createIndex('queuedAt', 'queuedAt', { unique: false });
+            fiscalQueueStore.createIndex('processedAt', 'processedAt', { unique: false });
+            console.log('✅ Store fiscal_queue criada');
+        }
+        
+        // Criar fiscal_logs
+        if (!db.objectStoreNames.contains('fiscal_logs')) {
+            const fiscalLogsStore = db.createObjectStore('fiscal_logs', { keyPath: 'id' });
+            fiscalLogsStore.createIndex('orderId', 'orderId', { unique: false });
+            fiscalLogsStore.createIndex('action', 'action', { unique: false });
+            fiscalLogsStore.createIndex('timestamp', 'timestamp', { unique: false });
+            console.log('✅ Store fiscal_logs criada');
+        }
     }
 }
 

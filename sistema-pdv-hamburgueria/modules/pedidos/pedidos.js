@@ -115,6 +115,11 @@ export class PedidosModule {
      */
     async loadOrders() {
         try {
+            // 🔄 INVALIDAR CACHE para garantir dados frescos do Firebase
+            if (window.dataCache) {
+                window.dataCache.invalidate('orders');
+            }
+            
             // OTIMIZAÇÃO: Carregar apenas pedidos dos últimos 30 dias
             const allOrders = await window.getFromDatabase('orders') || [];
             
@@ -128,6 +133,8 @@ export class PedidosModule {
                 if (Array.isArray(order)) return false; // Array salvo como objeto
                 if (order.status === undefined && order.total === undefined) return false;
                 if (order.id && (order.id.includes('yq202') || order.id.includes('i4jh'))) return false;
+                // Ignorar pedidos deletados
+                if (order.deletedAt) return false;
                 return true;
             });
             
@@ -142,7 +149,13 @@ export class PedidosModule {
             // PROTEÇÃO: Limitar a 1000 pedidos mais recentes e validar status
             this.currentOrders = validOrders
                 .filter(order => {
-                    const orderDate = new Date(order.date || order.createdAt);
+                    // CORREÇÃO: Verificar todos os campos de data possíveis
+                    const orderDate = new Date(order.timestamp || order.createdAt || order.date || order.data);
+                    // Se data inválida, incluir o pedido (não filtrar)
+                    if (isNaN(orderDate.getTime())) {
+                        console.warn(`⚠️ Pedido ${order.id} sem data válida, incluindo mesmo assim`);
+                        return true;
+                    }
                     return orderDate >= thirtyDaysAgo;
                 })
                 .map(order => {
@@ -152,7 +165,11 @@ export class PedidosModule {
                     }
                     return order;
                 })
-                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                .sort((a, b) => {
+                    const dateA = new Date(a.timestamp || a.createdAt || a.date || 0);
+                    const dateB = new Date(b.timestamp || b.createdAt || b.date || 0);
+                    return dateB - dateA;
+                })
                 .slice(0, 1000);
             
             console.log(`📦 ${this.currentOrders.length} pedidos carregados (últimos 30 dias)`);
@@ -599,7 +616,41 @@ export class PedidosModule {
                 break;
                 
             case 'delivered':
-                // Pedidos entregues também podem ser excluídos
+                // 🧾 BOTÃO DE EMISSÃO FISCAL - Principal para pedidos entregues
+                const fiscalStatus = order.fiscal?.status || 'pending';
+                const fiscalChave = order.fiscal?.chave;
+                
+                if (fiscalStatus === 'authorized' && fiscalChave) {
+                    // Já emitido - mostrar botão de visualizar/imprimir
+                    actions.push(`
+                        <button class="btn btn-sm btn-success" onclick="event.stopPropagation(); pedidosModule.viewFiscalDocument('${order.id}')" title="NFC-e Autorizada">
+                            <i class="fas fa-check-circle"></i> NFC-e ✓
+                        </button>
+                    `);
+                } else if (fiscalStatus === 'queued' || fiscalStatus === 'processing') {
+                    // Na fila ou processando
+                    actions.push(`
+                        <button class="btn btn-sm btn-warning" disabled title="Aguardando Emissão">
+                            <i class="fas fa-clock"></i> Aguardando...
+                        </button>
+                    `);
+                } else if (fiscalStatus === 'error' || fiscalStatus === 'denied') {
+                    // Erro - permitir reemitir
+                    actions.push(`
+                        <button class="btn btn-sm btn-danger" onclick="event.stopPropagation(); pedidosModule.emitFiscalDocument('${order.id}')" title="Erro na emissão - Clique para tentar novamente">
+                            <i class="fas fa-exclamation-triangle"></i> Reemitir NFC-e
+                        </button>
+                    `);
+                } else {
+                    // Pendente - mostrar botão de emitir
+                    actions.push(`
+                        <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); pedidosModule.emitFiscalDocument('${order.id}')" title="Emitir Nota Fiscal">
+                            <i class="fas fa-file-invoice"></i> Emitir NFC-e
+                        </button>
+                    `);
+                }
+                
+                // Botão de excluir para pedidos entregues
                 actions.push(`
                     <button class="btn btn-sm btn-outline-danger" onclick="event.stopPropagation(); pedidosModule.deleteOrder('${order.id}')" title="Excluir Pedido">
                         <i class="fas fa-trash"></i> Excluir
@@ -705,21 +756,8 @@ export class PedidosModule {
                 updatedAt: savedOrder.updatedAt
             });
             
-            // 🔥 SINCRONIZAR COM FIREBASE (se for pedido online)
-            if (order.source === 'online' && window.firebaseManager) {
-                try {
-                    console.log('🔥 [PEDIDOS] Sincronizando status com Firebase:', orderId);
-                    await window.firebaseManager.updateData(`online-orders/${orderId}`, {
-                        status: newStatus,
-                        updatedAt: order.updatedAt,
-                        statusHistory: order.statusHistory
-                    });
-                    console.log('✅ [PEDIDOS] Status sincronizado com Firebase');
-                } catch (fbError) {
-                    console.warn('⚠️ [PEDIDOS] Erro ao sincronizar com Firebase:', fbError);
-                    // Não bloquear o fluxo se Firebase falhar
-                }
-            }
+            // ✅ SINCRONIZAÇÃO JÁ FEITA: updateInDatabase redireciona para online-orders
+            // Não precisamos de update adicional - o firebase-service.js já sincroniza
             
             // Verificar se realmente salvou
             const verifyOrders = await window.getFromDatabase('orders');
@@ -760,9 +798,229 @@ export class PedidosModule {
             // Notificação do sistema (se suportado)
             this.sendNotification(order, newStatus);
 
+            // 📋 INTEGRAÇÃO FISCAL: Quando pedido é finalizado (delivered)
+            if (newStatus === 'delivered') {
+                await this.handleOrderDeliveredFiscal(order);
+            }
+
         } catch (error) {
             console.error('[PEDIDOS] Erro ao atualizar status:', error);
             if (window.showToast) window.showToast('Erro ao atualizar status do pedido', 'error');
+        }
+    }
+
+    /**
+     * Trata pedido finalizado para questões fiscais
+     * @param {Object} order - Pedido finalizado
+     */
+    async handleOrderDeliveredFiscal(order) {
+        try {
+            console.log('📋 [FISCAL] Processando pedido finalizado para fila fiscal:', order.id);
+
+            // Verificar se já tem estrutura fiscal
+            if (!order.fiscal) {
+                order.fiscal = {
+                    enabled: false,
+                    status: 'pending',
+                    model: 'NFC-e',
+                    numero: null,
+                    serie: null,
+                    chave: null,
+                    protocolo: null,
+                    xmlUrl: null,
+                    pdfUrl: null,
+                    ambiente: 'homologacao',
+                    createdAt: new Date().toISOString(),
+                    authorizedAt: null,
+                    cancelledAt: null,
+                    error: null,
+                    errorCode: null,
+                    attempts: []
+                };
+            }
+
+            // Atualizar timestamp de criação fiscal
+            order.fiscal.createdAt = new Date().toISOString();
+
+            // Verificar se o serviço fiscal está disponível e configurado
+            if (window.fiscalService) {
+                const queueResult = await window.fiscalService.addToFiscalQueue(order);
+                
+                if (queueResult.queued) {
+                    order.fiscal.status = 'queued';
+                    console.log('✅ [FISCAL] Pedido adicionado à fila fiscal');
+                    
+                    // Salvar ordem atualizada com status fiscal
+                    await window.updateInDatabase('orders', order);
+                } else {
+                    console.log('ℹ️ [FISCAL] Pedido não foi adicionado à fila:', queueResult.errors?.join(', ') || 'Gateway não configurado');
+                }
+            } else {
+                console.log('ℹ️ [FISCAL] Serviço fiscal não inicializado - emissão fiscal não disponível');
+            }
+
+        } catch (error) {
+            console.error('❌ [FISCAL] Erro ao processar pedido para fila fiscal:', error);
+            // Não bloquear o fluxo do pedido por erro fiscal
+        }
+    }
+
+    /**
+     * 🧾 Emite NFC-e para um pedido entregue
+     * @param {string} orderId - ID do pedido
+     */
+    async emitFiscalDocument(orderId) {
+        try {
+            console.log('🧾 [FISCAL] Iniciando emissão de NFC-e para:', orderId);
+            
+            // Buscar pedido
+            const orders = await window.getFromDatabase('orders');
+            const order = orders.find(o => o.id === orderId);
+            
+            if (!order) {
+                if (window.showToast) window.showToast('Pedido não encontrado', 'error');
+                return;
+            }
+            
+            // Verificar se pedido está entregue
+            if (order.status !== 'delivered') {
+                if (window.showToast) window.showToast('Pedido precisa estar entregue para emitir NFC-e', 'warning');
+                return;
+            }
+            
+            // Verificar se serviço fiscal está disponível
+            if (!window.fiscalService) {
+                if (window.showToast) window.showToast('Serviço fiscal não disponível', 'error');
+                console.error('❌ [FISCAL] window.fiscalService não encontrado');
+                return;
+            }
+            
+            // Verificar se já está autorizada
+            if (order.fiscal?.status === 'authorized') {
+                if (window.showToast) window.showToast('NFC-e já foi emitida para este pedido', 'info');
+                return;
+            }
+            
+            // Mostrar loading
+            if (window.showToast) window.showToast('Enviando para fila fiscal...', 'info');
+            
+            // 1. Enviar para fila fiscal
+            const queueResult = await window.fiscalService.sendToQueue(order);
+            
+            if (!queueResult.success) {
+                if (window.showToast) window.showToast(`❌ ${queueResult.reasons?.join(', ') || 'Erro ao enviar'}`, 'error');
+                return;
+            }
+            
+            // 2. Processar imediatamente (se gateway estiver pronto)
+            const gatewayStatus = window.fiscalService.isGatewayReady();
+            
+            if (gatewayStatus.ready) {
+                if (window.showToast) window.showToast('Processando NFC-e...', 'info');
+                
+                const result = await window.fiscalService.processQueueItem(orderId);
+                
+                if (result.success) {
+                    if (window.showToast) window.showToast('✅ NFC-e emitida com sucesso!', 'success');
+                } else {
+                    if (window.showToast) window.showToast(`⚠️ ${result.reasons?.join(', ') || 'Aguardando processamento'}`, 'warning');
+                }
+            } else {
+                if (window.showToast) window.showToast(`📋 Pedido na fila fiscal. ${gatewayStatus.reason}`, 'info');
+            }
+            
+            // Recarregar lista de pedidos
+            await this.loadOrders();
+            
+        } catch (error) {
+            console.error('❌ [FISCAL] Erro ao emitir NFC-e:', error);
+            if (window.showToast) window.showToast('Erro ao emitir NFC-e', 'error');
+        }
+    }
+
+    /**
+     * 📄 Visualiza documento fiscal (NFC-e autorizada)
+     * @param {string} orderId - ID do pedido
+     */
+    async viewFiscalDocument(orderId) {
+        try {
+            console.log('📄 [FISCAL] Visualizando documento fiscal:', orderId);
+            
+            // Buscar pedido
+            const orders = await window.getFromDatabase('orders');
+            const order = orders.find(o => o.id === orderId);
+            
+            if (!order || !order.fiscal) {
+                if (window.showToast) window.showToast('Dados fiscais não encontrados', 'error');
+                return;
+            }
+            
+            const fiscal = order.fiscal;
+            
+            // Criar modal com informações fiscais
+            const modalHtml = `
+                <div class="modal fade" id="fiscalModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header bg-success text-white">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-check-circle"></i> NFC-e Autorizada
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <strong>Pedido:</strong> #${order.orderNumber || order.number || order.id.slice(-8)}
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Chave de Acesso:</strong><br>
+                                    <code style="font-size: 11px; word-break: break-all;">${fiscal.chave || 'N/A'}</code>
+                                </div>
+                                <div class="row mb-3">
+                                    <div class="col-6">
+                                        <strong>Número:</strong> ${fiscal.numero || 'N/A'}
+                                    </div>
+                                    <div class="col-6">
+                                        <strong>Série:</strong> ${fiscal.serie || 'N/A'}
+                                    </div>
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Protocolo:</strong> ${fiscal.protocolo || 'N/A'}
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Data Autorização:</strong> ${fiscal.authorizedAt ? new Date(fiscal.authorizedAt).toLocaleString('pt-BR') : 'N/A'}
+                                </div>
+                                <div class="mb-3">
+                                    <strong>Ambiente:</strong> 
+                                    <span class="badge ${fiscal.ambiente === 'producao' ? 'bg-danger' : 'bg-warning'}">
+                                        ${fiscal.ambiente === 'producao' ? 'PRODUÇÃO' : 'HOMOLOGAÇÃO'}
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                ${fiscal.pdfUrl ? `<a href="${fiscal.pdfUrl}" target="_blank" class="btn btn-primary"><i class="fas fa-file-pdf"></i> Ver DANFE</a>` : ''}
+                                ${fiscal.xmlUrl ? `<a href="${fiscal.xmlUrl}" target="_blank" class="btn btn-secondary"><i class="fas fa-code"></i> Ver XML</a>` : ''}
+                                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Fechar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Remover modal anterior se existir
+            const existingModal = document.getElementById('fiscalModal');
+            if (existingModal) existingModal.remove();
+            
+            // Adicionar modal ao DOM
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            
+            // Abrir modal
+            const modal = new bootstrap.Modal(document.getElementById('fiscalModal'));
+            modal.show();
+            
+        } catch (error) {
+            console.error('❌ [FISCAL] Erro ao visualizar documento fiscal:', error);
+            if (window.showToast) window.showToast('Erro ao visualizar documento', 'error');
         }
     }
 
@@ -798,8 +1056,9 @@ export class PedidosModule {
                 return false;
             }
 
-            // Filtro por período
-            if (!this.matchesDateFilter(order.createdAt, this.filters.dateRange)) {
+            // Filtro por período - usar múltiplos campos de data
+            const orderDate = order.timestamp || order.createdAt || order.date || order.data;
+            if (!this.matchesDateFilter(orderDate, this.filters.dateRange)) {
                 return false;
             }
 
@@ -849,7 +1108,13 @@ export class PedidosModule {
      * Verifica se a data corresponde ao filtro
      */
     matchesDateFilter(dateString, filter) {
+        // Se não tem data ou filtro é 'all', incluir
+        if (!dateString || filter === 'all') return true;
+        
         const date = new Date(dateString);
+        // Se data inválida, incluir no resultado (não excluir)
+        if (isNaN(date.getTime())) return true;
+        
         const today = new Date();
         const yesterday = new Date(today);
         yesterday.setDate(today.getDate() - 1);
@@ -1578,7 +1843,27 @@ export class PedidosModule {
             source: 'manual',
             createdBy: 'admin',
             createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+            updatedAt: new Date().toISOString(),
+            
+            // 📋 ESTRUTURA FISCAL - Preparação para NFC-e
+            fiscal: {
+                enabled: false,              // Emissão fiscal habilitada para este pedido
+                status: 'pending',           // pending | queued | processing | authorized | denied | cancelled | error
+                model: 'NFC-e',              // Modelo do documento fiscal
+                numero: null,                // Número da nota
+                serie: null,                 // Série da nota
+                chave: null,                 // Chave de acesso (44 dígitos)
+                protocolo: null,             // Protocolo de autorização
+                xmlUrl: null,                // URL do arquivo XML
+                pdfUrl: null,                // URL do PDF/DANFE
+                ambiente: 'homologacao',     // homologacao | producao
+                createdAt: null,             // Data de criação do registro fiscal
+                authorizedAt: null,          // Data de autorização pela SEFAZ
+                cancelledAt: null,           // Data de cancelamento
+                error: null,                 // Mensagem de erro (se houver)
+                errorCode: null,             // Código de erro da SEFAZ
+                attempts: []                 // Histórico de tentativas de emissão
+            }
         };
 
         try {
@@ -1874,25 +2159,8 @@ export class PedidosModule {
                 user: 'Sistema'
             });
 
-            // Salva no banco
+            // Salva no banco (já sincroniza com online-orders via firebase-service)
             await window.updateInDatabase('orders', order);
-            
-            // 🔥 SINCRONIZAR COM FIREBASE (se for pedido online)
-            if (order.source === 'online' && window.firebaseManager) {
-                try {
-                    console.log('🔥 [PEDIDOS] Sincronizando cancelamento com Firebase:', orderId);
-                    await window.firebaseManager.updateData(`online-orders/${orderId}`, {
-                        status: 'cancelled',
-                        cancellationReason: reason,
-                        cancelledAt: order.cancelledAt,
-                        updatedAt: order.updatedAt,
-                        statusHistory: order.statusHistory
-                    });
-                    console.log('✅ [PEDIDOS] Cancelamento sincronizado com Firebase');
-                } catch (fbError) {
-                    console.warn('⚠️ [PEDIDOS] Erro ao sincronizar cancelamento com Firebase:', fbError);
-                }
-            }
 
             // Atualiza interface
             await this.loadOrders();
@@ -2609,25 +2877,8 @@ export class PedidosModule {
                 note: 'Pedido editado manualmente'
             });
 
+            // Salva no banco (já sincroniza com online-orders via firebase-service)
             await window.updateInDatabase('orders', this.currentEditOrder);
-
-            if (this.currentEditOrder.source === 'online' && window.firebaseManager) {
-                try {
-                    await window.firebaseManager.updateData(`online-orders/${orderId}`, {
-                        items: this.currentEditOrder.items,
-                        customerName,
-                        customerPhone,
-                        paymentMethod,
-                        observations,
-                        subtotal: this.currentEditOrder.subtotal,
-                        total: this.currentEditOrder.total,
-                        updatedAt: this.currentEditOrder.updatedAt,
-                        statusHistory: this.currentEditOrder.statusHistory
-                    });
-                } catch (fbError) {
-                    console.warn('⚠️ Erro ao sincronizar com Firebase:', fbError);
-                }
-            }
 
             const modal = document.getElementById('editOrderModal');
             if (modal) {
@@ -2678,7 +2929,27 @@ export class PedidosModule {
                 // Remove campos específicos do pedido original
                 cancelledAt: undefined,
                 cancellationReason: undefined,
-                deliveredAt: undefined
+                deliveredAt: undefined,
+                
+                // 📋 RESETAR ESTRUTURA FISCAL - Novo pedido não herda nota fiscal
+                fiscal: {
+                    enabled: false,
+                    status: 'pending',
+                    model: 'NFC-e',
+                    numero: null,
+                    serie: null,
+                    chave: null,
+                    protocolo: null,
+                    xmlUrl: null,
+                    pdfUrl: null,
+                    ambiente: 'homologacao',
+                    createdAt: null,
+                    authorizedAt: null,
+                    cancelledAt: null,
+                    error: null,
+                    errorCode: null,
+                    attempts: []
+                }
             };
 
             // Salva novo pedido

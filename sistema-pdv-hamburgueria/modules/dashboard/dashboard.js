@@ -45,14 +45,26 @@ export class DashboardModule {
         try {
             console.log('📊 Inicializando Dashboard Module...');
             
+            // Verificar se Chart.js está disponível
+            if (typeof Chart === 'undefined') {
+                console.error('❌ CRÍTICO: Chart.js não está disponível!');
+                throw new Error('Chart.js não carregado. Verifique a conexão com internet.');
+            }
+            console.log('✅ Chart.js carregado:', Chart.version);
+            
             // 1. Carregar dados do IndexedDB
+            console.log('📥 Carregando dados...');
             await this.loadAllData();
+            console.log('✅ Dados carregados');
             
             // 2. Configurar event listeners
+            console.log('🔗 Configurando event listeners...');
             this.bindEvents();
             
             // 3. Renderizar dashboard
+            console.log('🎨 Renderizando dashboard...');
             this.render();
+            console.log('✅ Dashboard renderizado');
             
             // 4. Iniciar atualização automática
             this.startAutoUpdate();
@@ -65,7 +77,7 @@ export class DashboardModule {
         } catch (error) {
             console.error('❌ Erro ao inicializar Dashboard:', error);
             this.isInitialized = false; // CORREÇÃO: Resetar em caso de erro
-            this.showError('Erro ao carregar dashboard');
+            this.showError('Erro ao carregar dashboard: ' + error.message);
             throw error;
         }
     }
@@ -78,17 +90,21 @@ export class DashboardModule {
         try {
             // Carregar pedidos do IndexedDB
             const orders = await this.getOrdersFromDatabase();
+            console.log(`📦 Pedidos carregados do BD: ${orders.length}`);
             
             // Carregar produtos
             const products = await this.getProductsFromDatabase();
+            console.log(`📦 Produtos carregados do BD: ${products.length}`);
             
             // Carregar clientes
             const customers = await this.getCustomersFromDatabase();
+            console.log(`👥 Clientes carregados do BD: ${customers.length}`);
             
             // Verificar se há dados
             const hasData = products.length > 0 || customers.length > 0;
             
             if (!hasData) {
+                console.warn('⚠️ Sem dados cadastrados no sistema');
                 this.showEmptyDataBanner();
             } else {
                 this.hideEmptyDataBanner();
@@ -138,40 +154,92 @@ export class DashboardModule {
     }
     
     processData(orders, products, customers) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        // NOTE: Carregando TODOS os pedidos, sem filtro de data
+        console.log(`📊 Total de pedidos carregados: ${orders.length}`);
         
-        // Filtrar pedidos de hoje
-        const todayOrders = orders.filter(order => {
-            const orderDate = new Date(order.date || order.createdAt);
-            orderDate.setHours(0, 0, 0, 0);
-            return orderDate.getTime() === today.getTime() && order.status !== 'cancelled';
+        // 🔄 FILTRAR PEDIDOS VÁLIDOS - Remover pedidos fantasma/corrompidos
+        const validOrders = orders.filter(order => {
+            // Deve ser um objeto
+            if (!order || typeof order !== 'object') return false;
+            if (Array.isArray(order)) return false;
+            
+            // Deve ter ID válido
+            if (!order.id) return false;
+            
+            // Não pode estar deletado
+            if (order.deletedAt) return false;
+            
+            // Deve ter status válido ou dados mínimos
+            const hasStatus = order.status && typeof order.status === 'string';
+            const hasTotal = typeof order.total === 'number' || typeof order.value === 'number';
+            const hasItems = order.items && Array.isArray(order.items) && order.items.length > 0;
+            const hasItens = order.itens && Array.isArray(order.itens) && order.itens.length > 0;
+            
+            // Precisa ter pelo menos status + (total OU itens)
+            if (!hasStatus && !hasTotal && !hasItems && !hasItens) {
+                console.warn('⚠️ Pedido inválido ignorado:', order.id);
+                return false;
+            }
+            
+            // Validar data (não pode ser "Invalid Date")
+            const dateRaw = order.timestamp || order.createdAt || order.date || order.data;
+            if (dateRaw) {
+                const dateObj = new Date(dateRaw);
+                if (isNaN(dateObj.getTime())) {
+                    console.warn('⚠️ Pedido com data inválida ignorado:', order.id);
+                    return false;
+                }
+            }
+            
+            return true;
         });
         
-        // Calcular estatísticas básicas
-        this.stats.totalOrders = todayOrders.length;
-        this.stats.totalSales = todayOrders.reduce((sum, order) => sum + (order.total || 0), 0);
+        console.log(`✅ Pedidos válidos: ${validOrders.length} de ${orders.length}`);
+        
+        const allOrders = validOrders;
+        
+        console.log(`🎯 Processando ${allOrders.length} pedidos`);
+        
+        // Calcular estatísticas básicas para TODOS os pedidos
+        this.stats.totalOrders = allOrders.filter(o => o.status !== 'cancelled').length;
+        this.stats.totalSales = allOrders
+            .filter(o => o.status !== 'cancelled')
+            .reduce((sum, order) => sum + (order.total || order.value || 0), 0);
         this.stats.averageTicket = this.stats.totalOrders > 0 
             ? this.stats.totalSales / this.stats.totalOrders 
             : 0;
-        this.stats.activeOrders = todayOrders.filter(order => 
+        this.stats.activeOrders = allOrders.filter(order => 
             ['confirmed', 'preparing', 'ready'].includes(order.status)
         ).length;
         
-        // Calcular clientes únicos de hoje
+        console.log(`💰 Total vendido: R$ ${this.stats.totalSales.toFixed(2)}`);
+        console.log(`📦 Pedidos ativos: ${this.stats.activeOrders}`);
+        console.log(`🎫 Ticket médio: R$ ${this.stats.averageTicket.toFixed(2)}`);
+        console.log(`📊 Breakdown por status:`, {
+            total: allOrders.length,
+            cancelled: allOrders.filter(o => o.status === 'cancelled').length,
+            confirmed: allOrders.filter(o => o.status === 'confirmed').length,
+            preparing: allOrders.filter(o => o.status === 'preparing').length,
+            ready: allOrders.filter(o => o.status === 'ready').length,
+            delivered: allOrders.filter(o => o.status === 'delivered').length,
+            other: allOrders.filter(o => !['cancelled', 'confirmed', 'preparing', 'ready', 'delivered'].includes(o.status)).length
+        });
+        
+        // Calcular clientes únicos de TODOS os pedidos
         const uniqueCustomers = new Set(
-            todayOrders
+            allOrders
                 .map(order => order.customer?.id || order.customerId)
                 .filter(id => id)
         );
         this.stats.customersServed = uniqueCustomers.size;
+        console.log(`👥 Clientes atendidos (total): ${this.stats.customersServed}`);
         
         // ========================================
         // KPIs PROFISSIONAIS
         // ========================================
         
         // Taxa de Conversão (pedidos confirmados / total)
-        const confirmedOrders = todayOrders.filter(o => o.status === 'confirmed' || o.status === 'completed');
+        const confirmedOrders = allOrders.filter(o => o.status === 'confirmed' || o.status === 'completed');
         this.stats.conversionRate = this.stats.totalOrders > 0 
             ? (confirmedOrders.length / this.stats.totalOrders * 100).toFixed(1)
             : 0;
@@ -181,35 +249,26 @@ export class DashboardModule {
         this.stats.profitMargin = 40;
         
         // Taxa de Pedidos Cancelados
-        const cancelledOrders = orders.filter(order => {
-            const orderDate = new Date(order.date || order.createdAt);
-            orderDate.setHours(0, 0, 0, 0);
-            return orderDate.getTime() === today.getTime() && order.status === 'cancelled';
-        });
+        const cancelledOrders = allOrders.filter(order => order.status === 'cancelled');
         this.stats.cancellationRate = (this.stats.totalOrders + cancelledOrders.length) > 0
             ? (cancelledOrders.length / (this.stats.totalOrders + cancelledOrders.length) * 100).toFixed(1)
             : 0;
         
-        // Comparação com ontem
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayOrders = orders.filter(order => {
-            const orderDate = new Date(order.date || order.createdAt);
-            orderDate.setHours(0, 0, 0, 0);
-            return orderDate.getTime() === yesterday.getTime() && order.status !== 'cancelled';
-        });
+        // Comparação com período anterior (não aplicável para todos os pedidos)
+        this.stats.salesGrowth = 0;
         
-        const yesterdaySales = yesterdayOrders.reduce((sum, order) => sum + (order.total || 0), 0);
-        this.stats.salesGrowth = yesterdaySales > 0 
-            ? (((this.stats.totalSales - yesterdaySales) / yesterdaySales) * 100).toFixed(1)
-            : 0;
+        console.log(`📈 Crescimento vs ontem: ${this.stats.salesGrowth}%`);
         
         // Processar dados para gráficos
-        this.processChartData(todayOrders);
+        this.processChartData(allOrders);
         
-        // Armazenar pedidos recentes
-        this.recentOrders = todayOrders
-            .sort((a, b) => new Date(b.date || b.createdAt) - new Date(a.date || a.createdAt))
+        // Armazenar pedidos recentes (últimos 10)
+        this.recentOrders = allOrders
+            .sort((a, b) => {
+                const dateA = new Date(b.timestamp || b.createdAt || b.date || b.data || 0);
+                const dateB = new Date(a.timestamp || a.createdAt || a.date || a.data || 0);
+                return dateA - dateB;
+            })
             .slice(0, 10);
     }
     
@@ -218,8 +277,9 @@ export class DashboardModule {
         const hourlyData = new Array(24).fill(0);
         
         orders.forEach(order => {
-            const hour = new Date(order.date || order.createdAt).getHours();
-            hourlyData[hour] += order.total || 0;
+            const orderDateRaw = order.timestamp || order.createdAt || order.date || order.data || 0;
+            const hour = new Date(orderDateRaw).getHours();
+            hourlyData[hour] += order.total || order.value || 0;
         });
         
         this.chartData.hourly = hourlyData;
@@ -230,30 +290,72 @@ export class DashboardModule {
     // ========================================
     
     render() {
+        console.log('🎨 Iniciando renderização do dashboard...');
         this.renderStats();
         this.renderKPIs();
         this.renderRecentOrders();
         this.renderChart();
-        console.log('🎨 Dashboard renderizado completo');
+        console.log('✅ Dashboard renderizado completo');
     }
     
     renderStats() {
-        // Atualizar cards de estatísticas
-        this.updateStatValue('sales-today', window.formatCurrency 
-            ? window.formatCurrency(this.stats.totalSales) 
-            : `R$ ${this.stats.totalSales.toFixed(2)}`
-        );
+        console.log('📊 Renderizando stats:', this.stats);
         
+        // Verificar se window.formatCurrency existe
+        if (!window.formatCurrency) {
+            console.warn('⚠️ window.formatCurrency não está disponível!');
+        }
+        
+        // Atualizar cards de estatísticas
+        const salesValue = window.formatCurrency 
+            ? window.formatCurrency(this.stats.totalSales) 
+            : `R$ ${this.stats.totalSales.toFixed(2)}`;
+        console.log(`💰 Vendas Hoje: ${salesValue} (Raw: ${this.stats.totalSales})`);
+        this.updateStatValue('sales-today', salesValue);
+        
+        // Atualizar crescimento de vendas
+        const salesGrowthClass = this.stats.salesGrowth >= 0 ? 'positive' : 'negative';
+        const salesGrowthIcon = this.stats.salesGrowth >= 0 ? '↑' : '↓';
+        const salesGrowthText = `${salesGrowthIcon} ${Math.abs(this.stats.salesGrowth)}% em relação a ontem`;
+        const salesTrendElement = document.getElementById('sales-trend');
+        if (salesTrendElement) {
+            salesTrendElement.className = `stat-trend ${salesGrowthClass}`;
+            const growthSpan = document.getElementById('sales-growth');
+            if (growthSpan) {
+                growthSpan.textContent = salesGrowthText;
+            }
+        }
+        
+        console.log(`📦 Pedidos Ativos: ${this.stats.activeOrders}`);
         this.updateStatValue('active-orders', this.stats.activeOrders);
         
+        // Contar pedidos em preparação
+        const preparingCount = this.recentOrders ? this.recentOrders.filter(o => o.status === 'preparing').length : 0;
+        const ordersPrepText = `${preparingCount} em preparação`;
+        const ordersPrepSpan = document.getElementById('orders-preparing');
+        if (ordersPrepSpan) {
+            ordersPrepSpan.textContent = ordersPrepText;
+        }
+        
+        console.log(`👥 Clientes Atendidos: ${this.stats.customersServed || 0}`);
         this.updateStatValue('customers-served', this.stats.customersServed || 0);
         
-        this.updateStatValue('average-ticket', window.formatCurrency 
+        const ticketValue = window.formatCurrency 
             ? window.formatCurrency(this.stats.averageTicket) 
-            : `R$ ${this.stats.averageTicket.toFixed(2)}`
-        );
+            : `R$ ${this.stats.averageTicket.toFixed(2)}`;
+        console.log(`🎫 Ticket Médio: ${ticketValue} (Raw: ${this.stats.averageTicket})`);
+        this.updateStatValue('average-ticket', ticketValue);
         
-        console.log('📊 Stats atualizadas:', this.stats);
+        // Atualizar texto de comparação do ticket
+        const ticketChangeSpan = document.getElementById('ticket-change');
+        if (ticketChangeSpan && this.recentOrders && this.recentOrders.length > 0) {
+            // Calcular diferença média (simplificado)
+            const avgChange = this.stats.averageTicket * 0.05; // 5% de mudança aproximada
+            const ticketChangeText = window.formatCurrency 
+                ? window.formatCurrency(avgChange)
+                : `R$ ${avgChange.toFixed(2)}`;
+            ticketChangeSpan.textContent = ticketChangeText;
+        }
     }
     
     renderKPIs() {
@@ -317,6 +419,7 @@ export class DashboardModule {
         const element = document.getElementById(elementId);
         if (element) {
             element.textContent = value;
+            console.log(`✅ Atualizado #${elementId} = ${value}`);
         } else {
             console.warn(`⚠️ Elemento #${elementId} não encontrado`);
         }
@@ -342,37 +445,60 @@ export class DashboardModule {
             return;
         }
         
-        container.innerHTML = this.recentOrders.map(order => `
+        container.innerHTML = this.recentOrders.map(order => {
+            // Extrair itens (suportar items ou itens)
+            const items = order.items || order.itens || [];
+            const total = order.total || order.value || order.valores?.total || 0;
+            const orderNumber = order.number || order.orderNumber || order.numero || order.id?.slice(-4) || '????';
+            
+            // Formatar data com proteção
+            const dateRaw = order.timestamp || order.createdAt || order.date || order.data;
+            let timeFormatted = '';
+            if (dateRaw) {
+                const dateObj = new Date(dateRaw);
+                if (!isNaN(dateObj.getTime())) {
+                    timeFormatted = this.formatTime(dateRaw);
+                }
+            }
+            
+            return `
             <div class="order-item" data-order-id="${order.id}">
                 <div class="order-header">
-                    <span class="order-number">#${order.number || order.id.slice(-4)}</span>
-                    <span class="order-time">${this.formatTime(order.date || order.createdAt)}</span>
+                    <span class="order-number">#${orderNumber}</span>
+                    <span class="order-time">${timeFormatted}</span>
                 </div>
                 <div class="order-body">
                     <div class="order-items">
-                        ${(order.items || []).slice(0, 2).map(item => 
-                            `<span>${item.quantity}x ${item.name}</span>`
+                        ${items.slice(0, 2).map(item => 
+                            `<span>${item.quantity || item.quantidade || 1}x ${item.name || item.nome || 'Item'}</span>`
                         ).join('')}
-                        ${(order.items || []).length > 2 ? `<span>+${order.items.length - 2} mais</span>` : ''}
+                        ${items.length > 2 ? `<span>+${items.length - 2} mais</span>` : ''}
                     </div>
                     <div class="order-footer">
                         <span class="order-total">${window.formatCurrency 
-                            ? window.formatCurrency(order.total) 
-                            : `R$ ${order.total.toFixed(2)}`
+                            ? window.formatCurrency(total) 
+                            : `R$ ${Number(total).toFixed(2)}`
                         }</span>
-                        <span class="order-status status-${order.status}">
+                        <span class="order-status status-${order.status || 'pending'}">
                             ${this.getStatusText(order.status)}
                         </span>
                     </div>
                 </div>
             </div>
-        `).join('');
+        `}).join('');
     }
     
     renderChart() {
         const canvas = document.getElementById('sales-chart');
         if (!canvas) {
             console.warn('⚠️ Canvas #sales-chart não encontrado');
+            return;
+        }
+        
+        // Verificar se Chart.js está disponível
+        if (typeof Chart === 'undefined') {
+            console.error('❌ Chart.js não carregado! Verifique conexão com internet.');
+            canvas.parentElement.innerHTML = '<div style="padding: 40px; text-align: center; color: #ef4444; background: #fee; border-radius: 8px;"><i class="fas fa-exclamation-triangle"></i><p style="margin-top: 10px;">Erro ao carregar gráfico. Recarregue a página.</p></div>';
             return;
         }
         
@@ -820,7 +946,10 @@ export class DashboardModule {
     // ========================================
     
     formatTime(dateString) {
+        if (!dateString) return '';
         const date = new Date(dateString);
+        // Proteção contra Invalid Date
+        if (isNaN(date.getTime())) return '';
         return date.toLocaleTimeString('pt-BR', { 
             hour: '2-digit', 
             minute: '2-digit' 
@@ -829,6 +958,7 @@ export class DashboardModule {
     
     getStatusText(status) {
         const statusMap = {
+            'pending': 'Pendente',
             'draft': 'Rascunho',
             'confirmed': 'Confirmado',
             'preparing': 'Preparando',
@@ -836,7 +966,7 @@ export class DashboardModule {
             'delivered': 'Entregue',
             'cancelled': 'Cancelado'
         };
-        return statusMap[status] || status;
+        return statusMap[status] || status || 'Pendente';
     }
     
     showError(message) {

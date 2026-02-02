@@ -71,10 +71,12 @@
                     <i class="fas fa-chart-line"></i>
                     <span>Dashboard</span>
                 </div>
+                <!-- CARDÁPIO INTERNO DESABILITADO - Usando cardápio digital externo como fonte única
                 <div class="nav-item" data-page="cardapio">
                     <i class="fas fa-hamburger"></i>
                     <span>Cardápio</span>
                 </div>
+                -->
                 <div class="nav-item" data-page="pedidos">
                     <i class="fas fa-receipt"></i>
                     <span>Pedidos</span>
@@ -156,9 +158,9 @@
                             <div class="stat-info">
                                 <h3>Vendas Hoje</h3>
                                 <div class="stat-value" id="sales-today">R$ 1.245,80</div>
-                                <div class="stat-trend up">
+                                <div class="stat-trend up" id="sales-trend">
                                     <i class="fas fa-arrow-up"></i>
-                                    12% em relação a ontem
+                                    <span id="sales-growth">12% em relação a ontem</span>
                                 </div>
                             </div>
                         </div>
@@ -170,9 +172,9 @@
                             <div class="stat-info">
                                 <h3>Pedidos Ativos</h3>
                                 <div class="stat-value" id="active-orders">8</div>
-                                <div class="stat-trend down">
+                                <div class="stat-trend down" id="orders-trend">
                                     <i class="fas fa-clock"></i>
-                                    2 em preparação
+                                    <span id="orders-preparing">2 em preparação</span>
                                 </div>
                             </div>
                         </div>
@@ -184,9 +186,9 @@
                             <div class="stat-info">
                                 <h3>Clientes Atendidos</h3>
                                 <div class="stat-value" id="customers-served">42</div>
-                                <div class="stat-trend up">
+                                <div class="stat-trend up" id="customers-trend">
                                     <i class="fas fa-arrow-up"></i>
-                                    5% na média
+                                    <span id="customers-percent">5% na média</span>
                                 </div>
                             </div>
                         </div>
@@ -198,9 +200,9 @@
                             <div class="stat-info">
                                 <h3>Ticket Médio</h3>
                                 <div class="stat-value" id="average-ticket">R$ 29,65</div>
-                                <div class="stat-trend up">
+                                <div class="stat-trend up" id="ticket-trend">
                                     <i class="fas fa-arrow-up"></i>
-                                    R$ 2,10
+                                    <span id="ticket-change">R$ 2,10</span>
                                 </div>
                             </div>
                         </div>
@@ -373,6 +375,10 @@
                     <div class="page-header">
                         <h2>Gerenciamento de Clientes</h2>
                         <div class="page-actions">
+                            <button class="btn btn-success" id="whatsapp-broadcast" title="Enviar mensagem para vários clientes">
+                                <i class="fab fa-whatsapp"></i>
+                                Lista de Transmissão
+                            </button>
                             <button class="btn btn-secondary" id="export-customers">
                                 <i class="fas fa-download"></i>
                                 Exportar

@@ -205,9 +205,9 @@ class FirebaseManager {
         try {
             const userPath = `users/${currentUser.uid}/${path}`;
             
-            // Se updates é um array ou contém arrays, usar set() ao invés de update()
-            // Firebase não gosta de arrays no update()
-            if (Array.isArray(updates) || this.containsArrays(updates)) {
+            // CORREÇÃO: Usar set() APENAS se updates é um array puro na raiz
+            // Objetos com arrays internos (como items, statusHistory) devem usar update()
+            if (Array.isArray(updates)) {
                 await database.ref(userPath).set(updates);
                 console.log(`✅ Dados salvos (set): ${path}`);
             } else {
@@ -224,6 +224,7 @@ class FirebaseManager {
     
     /**
      * Verifica se um objeto contém arrays nas propriedades
+     * NOTA: Não mais usado para decidir set() vs update()
      */
     containsArrays(obj) {
         if (!obj || typeof obj !== 'object') return false;

@@ -1,13 +1,26 @@
 # Configuração Netlify - BurgerPDV
 [build]
   publish = "."
-  command = "echo 'No build required - Static site'"
+  functions = "netlify/functions"
 
-# Configuração de redirecionamentos SPA
-# IMPORTANTE: Não redirecionar arquivos HTML específicos
+# Configuração de Functions
+[functions]
+  node_bundler = "esbuild"
+
+# Redirecionamentos para API Fiscal (Functions)
 [[redirects]]
-  from = "/"
-  to = "/menu.html"
+  from = "/api/fiscal/emit"
+  to = "/.netlify/functions/fiscal-emit"
+  status = 200
+
+[[redirects]]
+  from = "/api/fiscal/status"
+  to = "/.netlify/functions/fiscal-status"
+  status = 200
+
+[[redirects]]
+  from = "/api/fiscal/cancel"
+  to = "/.netlify/functions/fiscal-cancel"
   status = 200
 
 # Headers de segurança
@@ -18,7 +31,10 @@
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
-    
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type"
+
 # Cache para assets estáticos
 [[headers]]
   for = "/assets/*"
@@ -30,11 +46,3 @@
   for = "/modules/*"
   [headers.values]
     Cache-Control = "public, max-age=86400"
-
-# Configuração para Firebase
-[[headers]]
-  for = "/*"
-  [headers.values]
-    Access-Control-Allow-Origin = "*"
-    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
-    Access-Control-Allow-Headers = "Content-Type"

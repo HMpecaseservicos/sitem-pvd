@@ -501,7 +501,13 @@ export class OnlineOrdersListener {
         
         // Suportar estrutura em português (cardápio antigo) e inglês (novo)
         const customer = onlineOrder.customer || onlineOrder.cliente || {};
-        const items = onlineOrder.items || onlineOrder.itens || [];
+        let items = onlineOrder.items || onlineOrder.itens || [];
+        
+        // 🔧 GARANTIR QUE items É SEMPRE ARRAY
+        if (!Array.isArray(items)) {
+            console.warn('⚠️ items não é array, convertendo para array vazio');
+            items = [];
+        }
         
         // 📅 NORMALIZAR DATA/HORA - Garantir estrutura completa
         const orderDate = this.parseOrderDate(onlineOrder);
@@ -517,6 +523,8 @@ export class OnlineOrdersListener {
                 name: item.name || item.nome,
                 price: item.price || item.preco,
                 extras: item.extras || item.adicionais,
+                extrasType: typeof (item.extras || item.adicionais),
+                extrasIsArray: Array.isArray(item.extras || item.adicionais),
                 observacoes: item.observations || item.observacao || item.obs
             });
         });
@@ -593,7 +601,18 @@ export class OnlineOrdersListener {
                 
                 // Converter extras/adicionais para formato de customizations
                 const customizations = {};
-                const extras = item.extras || item.adicionais || [];
+                let extras = item.extras || item.adicionais || [];
+                
+                // 🔧 GARANTIR QUE extras É SEMPRE ARRAY
+                if (!Array.isArray(extras)) {
+                    console.warn('⚠️ extras não é array, convertendo:', typeof extras, extras);
+                    // Se for string separada por vírgula ou +
+                    if (typeof extras === 'string') {
+                        extras = extras.split(/[,+]/).map(s => s.trim()).filter(s => s);
+                    } else {
+                        extras = [];
+                    }
+                }
                 
                 console.log('   📦 Extras final usado:', extras, 'Length:', extras.length);
                 
@@ -731,6 +750,27 @@ export class OnlineOrdersListener {
                 url: 'https://go-burguer.netlify.app/',
                 ip: onlineOrder.metadata?.ip || '',
                 userAgent: onlineOrder.metadata?.userAgent || ''
+            },
+            
+            // 📋 ESTRUTURA FISCAL - Preparação para NFC-e
+            // Inicializada como desabilitada, será preenchida quando o pedido for finalizado
+            fiscal: {
+                enabled: false,              // Emissão fiscal habilitada para este pedido
+                status: 'pending',           // pending | queued | processing | authorized | denied | cancelled | error
+                model: 'NFC-e',              // Modelo do documento fiscal
+                numero: null,                // Número da nota
+                serie: null,                 // Série da nota
+                chave: null,                 // Chave de acesso (44 dígitos)
+                protocolo: null,             // Protocolo de autorização
+                xmlUrl: null,                // URL do arquivo XML
+                pdfUrl: null,                // URL do PDF/DANFE
+                ambiente: 'homologacao',     // homologacao | producao
+                createdAt: null,             // Data de criação do registro fiscal
+                authorizedAt: null,          // Data de autorização pela SEFAZ
+                cancelledAt: null,           // Data de cancelamento
+                error: null,                 // Mensagem de erro (se houver)
+                errorCode: null,             // Código de erro da SEFAZ
+                attempts: []                 // Histórico de tentativas de emissão
             }
         };
         

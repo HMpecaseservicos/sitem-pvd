@@ -108,6 +108,9 @@ class FirebaseService {
      * Executa operação de save (método interno)
      */
     async _executeSave(collection, data) {
+        // 🔄 UNIFICAÇÃO: 'orders' agora salva em 'online-orders' para sincronizar com painel
+        const firebasePath = collection === 'orders' ? 'online-orders' : collection;
+        
         // 1. Garantir ID único
         if (!data.id) {
             data.id = this.generateId();
@@ -121,10 +124,10 @@ class FirebaseService {
         }
 
         try {
-            // 3. Salvar no Firebase (PRINCIPAL)
+            // 3. Salvar no Firebase (PRINCIPAL) - usando path unificado
             if (this.canUseFirebase()) {
-                await window.firebaseManager.updateData(`${collection}/${data.id}`, data);
-                console.log(`🔥 Salvo no Firebase: ${collection}/${data.id}`, {
+                await window.firebaseManager.updateData(`${firebasePath}/${data.id}`, data);
+                console.log(`🔥 Salvo no Firebase: ${firebasePath}/${data.id}`, {
                     status: data.status,
                     updatedAt: data.updatedAt
                 });
@@ -132,20 +135,15 @@ class FirebaseService {
                 // Adicionar à fila para sincronizar depois
                 this.pendingOperations.push({
                     type: 'save',
-                    collection,
+                    collection: firebasePath,
                     data,
                     timestamp: now
-                });
-                console.log(`📦 Firebase offline - Adicionado à fila: ${collection}/${data.id}`, {
-                    status: data.status,
-                    queueSize: this.pendingOperations.length
                 });
             }
 
             // 4. Atualizar cache local (sempre)
             if (this.cacheEnabled) {
                 await db.update(collection, data);
-                console.log(`💾 Cache atualizado: ${collection}/${data.id}`);
             }
 
             return data;
@@ -184,7 +182,6 @@ class FirebaseService {
                 reject,
                 timestamp: Date.now()
             });
-            console.log(`📦 Operação ${type} adicionada à fila (${this.operationQueue.length} pendentes)`);
         });
     }
     
@@ -225,41 +222,46 @@ class FirebaseService {
      */
     async get(collection, id = null) {
         try {
-            // 1. Buscar do cache (RÁPIDO - ~10ms)
+            // 🔄 UNIFICAÇÃO: 'orders' agora lê de 'online-orders' para sincronizar com painel
+            const firebasePath = collection === 'orders' ? 'online-orders' : collection;
+            
+            // 1. Buscar DIRETO do Firebase (fonte única de verdade)
+            if (this.canUseFirebase()) {
+                const path = id ? `${firebasePath}/${id}` : firebasePath;
+                const data = await window.firebaseManager.getData(path);
+                
+                if (data) {
+                    // Converter objeto Firebase para array
+                    if (!id && typeof data === 'object') {
+                        const dataArray = Object.entries(data).map(([key, value]) => {
+                            // Garantir que cada item tenha ID
+                            if (typeof value === 'object' && value !== null) {
+                                value.id = value.id || key;
+                                
+                                // Filtrar pedidos deletados
+                                if (collection === 'orders' && value.deletedAt) {
+                                    return null;
+                                }
+                            }
+                            return value;
+                        }).filter(item => item !== null);
+                        
+                        return dataArray;
+                    }
+                    return data;
+                }
+            }
+
+            // 2. Fallback: Se offline, tentar cache local
             if (this.cacheEnabled) {
                 const cached = id 
                     ? await db.get(collection, id)
                     : await db.getAll(collection);
                 
                 if (cached) {
-                    // Se encontrou no cache, retornar
-                    console.log(`💾 Cache hit: ${collection}${id ? `/${id}` : ''}`);
+                    console.log(`💾 Usando cache offline: ${collection}`);
                     return cached;
                 }
-            }
-
-            // 2. Se não tem no cache, buscar do Firebase
-            if (this.canUseFirebase()) {
-                const path = id ? `${collection}/${id}` : collection;
-                const data = await window.firebaseManager.getData(path);
-                
-                console.log(`🔥 Firebase fetch: ${path}`);
-                
-                // 3. Atualizar cache com dados do Firebase
-                if (data && this.cacheEnabled) {
-                    if (id) {
-                        await db.update(collection, data);
-                    } else {
-                        // Múltiplos registros
-                        const dataArray = Object.values(data);
-                        for (const item of dataArray) {
-                            await db.update(collection, item);
-                        }
-                    }
-                    console.log(`💾 Cache preenchido: ${path}`);
-                }
-                
-                return data;
             }
 
             // 3. Se offline e não tem cache, retornar vazio
@@ -311,15 +313,18 @@ class FirebaseService {
      */
     async delete(collection, id) {
         try {
+            // 🔄 UNIFICAÇÃO: 'orders' agora deleta de 'online-orders'
+            const firebasePath = collection === 'orders' ? 'online-orders' : collection;
+            
             // 1. Deletar do Firebase
             if (this.canUseFirebase()) {
-                await window.firebaseManager.deleteData(`${collection}/${id}`);
-                console.log(`🔥 Deletado do Firebase: ${collection}/${id}`);
+                await window.firebaseManager.deleteData(`${firebasePath}/${id}`);
+                console.log(`🔥 Deletado do Firebase: ${firebasePath}/${id}`);
             } else {
                 // Adicionar à fila
                 this.pendingOperations.push({
                     type: 'delete',
-                    collection,
+                    collection: firebasePath,
                     id,
                     timestamp: new Date().toISOString()
                 });

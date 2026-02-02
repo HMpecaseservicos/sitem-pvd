@@ -1,0 +1,33 @@
+# Dependências
+node_modules/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Build
+dist/
+build/
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Temporários
+*.tmp
+*.temp
+
+# Ambiente local
+.env
+.env.local
+.env.*.local
+
+# Cache
+.cache/
+.netlify/

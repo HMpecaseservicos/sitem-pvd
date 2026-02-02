@@ -234,3 +234,662 @@
     font-size: 14px;
     margin-bottom: 20px;
 }
+
+/* ============================================
+   SEÇÃO FISCAL (NFC-e)
+   ============================================ */
+
+.fiscal-section {
+    padding: 0;
+}
+
+.fiscal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #ecf0f1;
+}
+
+.fiscal-header h3 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.fiscal-status {
+    display: flex;
+    gap: 10px;
+}
+
+.status-badge {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.status-active {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-inactive {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.status-env-homologacao {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-env-producao {
+    background: #cce5ff;
+    color: #004085;
+}
+
+.fiscal-alert {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    padding: 20px;
+    border-radius: 10px;
+    margin-bottom: 25px;
+    border-left: 4px solid #2196f3;
+}
+
+.fiscal-alert i {
+    font-size: 24px;
+    color: #1976d2;
+    margin-top: 2px;
+}
+
+.fiscal-alert strong {
+    display: block;
+    margin-bottom: 5px;
+    color: #1565c0;
+}
+
+.fiscal-alert p {
+    margin: 0;
+    color: #424242;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.fiscal-card {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.fiscal-card h4 {
+    font-size: 16px;
+    color: #2c3e50;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #ecf0f1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.fiscal-card h4 i {
+    color: #e74c3c;
+}
+
+.fiscal-gateway,
+.fiscal-certificate {
+    background: #f8f9fa;
+    border: 1px dashed #dee2e6;
+}
+
+.gateway-info,
+.certificate-info {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: #fff3cd;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border-left: 3px solid #ffc107;
+}
+
+/* Gateway em homologação - destaque */
+.gateway-info.gateway-homolog {
+    background: #e7f3ff;
+    border-left-color: #007bff;
+}
+
+.gateway-info.gateway-homolog i {
+    color: #0056b3;
+}
+
+.gateway-info.gateway-homolog p {
+    color: #004085;
+}
+
+.gateway-info i,
+.certificate-info i {
+    color: #856404;
+    font-size: 18px;
+    margin-top: 2px;
+}
+
+.gateway-info p,
+.certificate-info p {
+    margin: 0;
+    font-size: 13px;
+    color: #856404;
+    line-height: 1.5;
+}
+
+.gateway-status-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #e9ecef;
+    margin-top: 10px;
+}
+
+.gateway-status-badge {
+    padding-top: 0;
+}
+
+.gateway-status-badge .badge {
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.badge-secondary {
+    background: #6c757d;
+    color: white;
+}
+
+.badge-success {
+    background: #28a745;
+    color: white;
+}
+
+.badge-warning {
+    background: #ffc107;
+    color: #212529;
+}
+
+#test-gateway-btn {
+    margin-left: auto;
+}
+
+/* Form layout */
+.form-row {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-bottom: 15px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group.col-md-2 { flex: 0 0 14%; }
+.form-group.col-md-3 { flex: 0 0 23%; }
+.form-group.col-md-4 { flex: 0 0 31%; }
+.form-group.col-md-5 { flex: 0 0 39%; }
+.form-group.col-md-6 { flex: 0 0 48%; }
+.form-group.col-md-7 { flex: 0 0 56%; }
+.form-group.col-md-8 { flex: 0 0 65%; }
+
+@media (max-width: 768px) {
+    .form-group.col-md-2,
+    .form-group.col-md-3,
+    .form-group.col-md-4,
+    .form-group.col-md-5,
+    .form-group.col-md-6,
+    .form-group.col-md-7,
+    .form-group.col-md-8 {
+        flex: 0 0 100%;
+    }
+}
+
+.form-check {
+    padding: 15px 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.form-check-input {
+    margin-right: 10px;
+    width: 18px;
+    height: 18px;
+}
+
+.form-check-label {
+    cursor: pointer;
+}
+
+.form-check-label strong {
+    display: block;
+    margin-bottom: 3px;
+    color: #2c3e50;
+}
+
+.form-check-label small {
+    display: block;
+    color: #7f8c8d;
+    font-size: 12px;
+}
+
+/* Actions */
+.fiscal-actions {
+    display: flex;
+    gap: 15px;
+    margin-top: 25px;
+    padding-top: 25px;
+    border-top: 2px solid #ecf0f1;
+}
+
+.fiscal-actions .btn-lg {
+    padding: 15px 30px;
+    font-size: 16px;
+}
+
+.btn-outline-secondary {
+    background: transparent;
+    border: 2px solid #6c757d;
+    color: #6c757d;
+    padding: 13px 25px;
+}
+
+.btn-outline-secondary:hover {
+    background: #6c757d;
+    color: white;
+}
+
+/* Fiscal Queue Status */
+.fiscal-queue-status {
+    margin-top: 30px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.fiscal-queue-status h4 {
+    margin-bottom: 15px;
+    color: #2c3e50;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.queue-info {
+    padding: 15px;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.queue-info p {
+    margin: 0;
+    color: #6c757d;
+    font-size: 14px;
+}
+
+.queue-info i {
+    color: #17a2b8;
+    margin-right: 8px;
+}
+
+/* ================================================================
+   FILA FISCAL VISÍVEL - Estilos
+   ================================================================ */
+
+.fiscal-queue-section {
+    margin-top: 30px;
+    padding: 25px;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #e9ecef;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.fiscal-queue-section h4 {
+    margin: 0 0 10px 0;
+    color: #2c3e50;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.fiscal-queue-section h4 i {
+    color: #e74c3c;
+}
+
+.fiscal-queue-description {
+    color: #7f8c8d;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+/* Resumo da Fila */
+.fiscal-queue-summary {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 25px;
+    flex-wrap: wrap;
+}
+
+.queue-stat {
+    flex: 1;
+    min-width: 100px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    text-align: center;
+    border: 1px solid #e9ecef;
+}
+
+.queue-stat .stat-number {
+    display: block;
+    font-size: 28px;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.queue-stat .stat-label {
+    display: block;
+    font-size: 12px;
+    color: #7f8c8d;
+    text-transform: uppercase;
+    margin-top: 5px;
+}
+
+.queue-stat.stat-pending {
+    background: #fff3cd;
+    border-color: #ffc107;
+}
+
+.queue-stat.stat-pending .stat-number {
+    color: #856404;
+}
+
+.queue-stat.stat-processing {
+    background: #cce5ff;
+    border-color: #007bff;
+}
+
+.queue-stat.stat-processing .stat-number {
+    color: #004085;
+}
+
+.queue-stat.stat-success {
+    background: #d4edda;
+    border-color: #28a745;
+}
+
+.queue-stat.stat-success .stat-number {
+    color: #155724;
+}
+
+.queue-stat.stat-error {
+    background: #f8d7da;
+    border-color: #dc3545;
+}
+
+.queue-stat.stat-error .stat-number {
+    color: #721c24;
+}
+
+/* Tabela da Fila */
+.fiscal-queue-table-container {
+    overflow-x: auto;
+    margin-bottom: 20px;
+    border: 1px solid #e9ecef;
+    border-radius: 10px;
+}
+
+.fiscal-queue-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.fiscal-queue-table thead {
+    background: #f8f9fa;
+}
+
+.fiscal-queue-table th {
+    padding: 12px 15px;
+    text-align: left;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+    white-space: nowrap;
+}
+
+.fiscal-queue-table td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #f1f3f5;
+    vertical-align: middle;
+}
+
+.fiscal-queue-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.fiscal-queue-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.queue-empty-row td {
+    text-align: center;
+    padding: 40px 20px;
+    color: #adb5bd;
+    font-size: 16px;
+}
+
+.queue-empty-row i {
+    font-size: 32px;
+    display: block;
+    margin-bottom: 10px;
+}
+
+/* Status Badges */
+.queue-status {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.status-pending,
+.status-queued {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-processing {
+    background: #cce5ff;
+    color: #004085;
+}
+
+.status-authorized {
+    background: #d4edda;
+    color: #155724;
+}
+
+.status-denied,
+.status-error {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.status-cancelled {
+    background: #e9ecef;
+    color: #6c757d;
+}
+
+/* Células especiais */
+.error-cell {
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #dc3545;
+    font-size: 12px;
+}
+
+/* Tentativas no limite */
+.attempts-max {
+    color: #dc3545;
+    font-weight: bold;
+}
+
+.actions-cell {
+    white-space: nowrap;
+    display: flex;
+    gap: 5px;
+}
+
+/* Botões de ação da fila */
+.btn-action {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.btn-action:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-action i {
+    font-size: 12px;
+}
+
+.btn-process {
+    background: #28a745;
+    color: white;
+}
+
+.btn-process:hover:not(:disabled) {
+    background: #218838;
+}
+
+.btn-retry {
+    background: #ffc107;
+    color: #212529;
+}
+
+.btn-retry:hover:not(:disabled) {
+    background: #e0a800;
+}
+
+.btn-cancel {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-cancel:hover:not(:disabled) {
+    background: #c82333;
+}
+
+.btn-remove {
+    background: #6c757d;
+    color: white;
+}
+
+.btn-remove:hover:not(:disabled) {
+    background: #5a6268;
+}
+
+.action-done {
+    color: #28a745;
+    font-size: 12px;
+}
+
+.action-processing {
+    color: #007bff;
+}
+
+/* Ações em lote */
+.fiscal-queue-actions {
+    display: flex;
+    gap: 10px;
+    padding-top: 15px;
+    border-top: 1px solid #e9ecef;
+}
+
+.fiscal-queue-actions .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-outline-info {
+    background: transparent;
+    border: 1px solid #17a2b8;
+    color: #17a2b8;
+}
+
+.btn-outline-info:hover {
+    background: #17a2b8;
+    color: white;
+}
+
+.btn-outline-warning {
+    background: transparent;
+    border: 1px solid #ffc107;
+    color: #856404;
+}
+
+.btn-outline-warning:hover {
+    background: #ffc107;
+    color: #212529;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+    .fiscal-queue-summary {
+        flex-direction: column;
+    }
+    
+    .queue-stat {
+        min-width: 100%;
+    }
+    
+    .fiscal-queue-table {
+        font-size: 12px;
+    }
+    
+    .fiscal-queue-table th,
+    .fiscal-queue-table td {
+        padding: 8px 10px;
+    }
+    
+    .actions-cell {
+        flex-direction: column;
+        gap: 3px;
+    }
+}

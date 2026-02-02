@@ -1,1 +1,7 @@
-/*    /index.html   200
+# API Fiscal redireciona para Functions
+/api/fiscal/emit    /.netlify/functions/fiscal-emit    200
+/api/fiscal/status  /.netlify/functions/fiscal-status  200
+/api/fiscal/cancel  /.netlify/functions/fiscal-cancel  200
+
+# Arquivos existentes são servidos diretamente
+# SPA fallback apenas para rotas desconhecidas

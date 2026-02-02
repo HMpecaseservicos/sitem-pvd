@@ -4,6 +4,7 @@
 // Importar dependências
 import { ModuleManager } from './modules/module-manager.js';
 import SystemCleaner from './modules/shared/system-cleaner.js';
+import fiscalService from './modules/shared/fiscal-service.js';
 
 // Classe principal da aplicação
 class App {
@@ -32,6 +33,14 @@ class App {
             // Inicializar gerenciador de módulos
             this.moduleManager = new ModuleManager();
             await this.moduleManager.init();
+            
+            // Inicializar serviço fiscal
+            try {
+                await fiscalService.init();
+                console.log('✅ Serviço fiscal inicializado');
+            } catch (fiscalError) {
+                console.warn('⚠️ Serviço fiscal não inicializado:', fiscalError.message);
+            }
             
             console.log('✅ BurgerPDV System inicializado com sucesso!');
             

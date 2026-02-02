@@ -15,7 +15,7 @@ class DataCache {
         this.cache = new Map();
         this.cacheTimestamps = new Map();
         this.cacheTTL = {
-            orders: 30000,      // 30 segundos (muda frequentemente)
+            orders: 5000,       // 🔄 UNIFICAÇÃO: 5 segundos (sincroniza com painel em tempo real)
             products: 300000,   // 5 minutos (muda pouco)
             customers: 300000,  // 5 minutos
             categories: 600000, // 10 minutos
@@ -192,7 +192,6 @@ class DataCache {
     invalidate(storeName) {
         this.cache.delete(storeName);
         this.cacheTimestamps.delete(storeName);
-        console.log(`🗑️ Cache invalidado: ${storeName}`);
     }
 
     /**

@@ -3,7 +3,8 @@
 // VERSÃO OTIMIZADA com Error Boundaries + Data Cache
 
 import { DashboardModule } from './dashboard/dashboard.js';
-import { CardapioModule } from './cardapio/cardapio.js';
+// CARDÁPIO INTERNO DESABILITADO - Cardápio digital externo é a fonte única de verdade
+// import { CardapioModule } from './cardapio/cardapio.js';
 import { PedidosModule } from './pedidos/pedidos.js';
 import ClientesModule from './clientes/clientes.js';
 import EstoqueModule from './estoque/estoque.js';
@@ -91,7 +92,8 @@ export class ModuleManager {
         // OTIMIZAÇÃO: Registrar módulos sem instanciar ainda (lazy loading)
         // Apenas registra as classes, instanciação acontece sob demanda
         this.registerModule('dashboard', DashboardModule);
-        this.registerModule('cardapio', CardapioModule);
+        // CARDÁPIO INTERNO DESABILITADO - Cardápio digital externo é a fonte única de verdade
+        // this.registerModule('cardapio', CardapioModule);
         this.registerModule('pedidos', PedidosModule);
         this.registerModule('clientes', ClientesModule);
         this.registerModule('estoque', EstoqueModule);
@@ -296,7 +298,7 @@ export class ModuleManager {
         const titleMap = {
             dashboard: 'Dashboard',
             pdv: 'Ponto de Venda',
-            cardapio: 'Cardápio',
+            // cardapio: 'Cardápio', // DESABILITADO - fonte única é cardápio digital
             pedidos: 'Pedidos',
             clientes: 'Clientes',
             estoque: 'Estoque',
@@ -370,14 +372,13 @@ export class ModuleManager {
         if (e.ctrlKey && !e.shiftKey && !e.altKey) {
             const moduleMap = {
                 '1': 'dashboard',
-                '2': 'pdv',
-                '3': 'cardapio',
-                '4': 'pedidos',
-                '5': 'clientes',
-                '6': 'estoque',
-                '7': 'financeiro',
-                '8': 'relatorios',
-                '9': 'configuracao'
+                '2': 'pedidos',
+                '3': 'clientes',
+                '4': 'estoque',
+                '5': 'financeiro',
+                '6': 'relatorios',
+                '7': 'configuracoes'
+                // CARDÁPIO INTERNO DESABILITADO - removido do mapa de atalhos
             };
             
             if (moduleMap[e.key]) {

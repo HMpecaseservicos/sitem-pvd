@@ -1,0 +1,18 @@
+{
+  "name": "sistema-pdv-hamburgueria",
+  "version": "1.0.0",
+  "description": "Sistema de Ponto de Venda (PDV) completo e moderno para hamburguerias, desenvolvido com **ES6 Modules**, **IndexedDB** e arquitetura modular profissional.",
+  "main": "app.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "node-fetch": "^2.7.0"
+  }
+}
