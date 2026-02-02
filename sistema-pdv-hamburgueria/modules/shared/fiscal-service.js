@@ -55,8 +55,11 @@ export const VALID_PAYMENT_METHODS = [
     'dinheiro', 'Dinheiro', 'DINHEIRO',
     'cartao', 'Cartao', 'CARTAO', 'cartão', 'Cartão', 'CARTÃO',
     'cartao_credito', 'cartao_debito', 'credito', 'debito',
+    'Cartão de Crédito', 'Cartão de Débito', 'cartao de credito', 'cartao de debito',
+    'Crédito', 'Débito', 'CREDITO', 'DEBITO',
     'pix', 'Pix', 'PIX',
-    'voucher', 'vale', 'vale_alimentacao', 'vale_refeicao'
+    'voucher', 'vale', 'vale_alimentacao', 'vale_refeicao',
+    'Vale Alimentação', 'Vale Refeição'
 ];
 
 /**
@@ -310,9 +313,37 @@ class FiscalService {
         try {
             const settings = await getFromDatabase('settings');
             
-            if (settings && settings.length > 0 && settings[0].fiscal) {
-                this.config = { ...DEFAULT_FISCAL_CONFIG, ...settings[0].fiscal };
-                console.log('✅ Configurações fiscais carregadas');
+            // Suporta tanto array quanto objeto
+            let fiscalConfig = null;
+            
+            if (Array.isArray(settings) && settings.length > 0) {
+                // Formato array - busca o primeiro com fiscal
+                const settingsWithFiscal = settings.find(s => s.fiscal);
+                if (settingsWithFiscal) {
+                    fiscalConfig = settingsWithFiscal.fiscal;
+                }
+            } else if (settings && typeof settings === 'object') {
+                // Formato objeto - busca 'default-settings' ou primeiro com fiscal
+                if (settings['default-settings']?.fiscal) {
+                    fiscalConfig = settings['default-settings'].fiscal;
+                } else {
+                    // Busca em outras chaves
+                    for (const key of Object.keys(settings)) {
+                        if (settings[key]?.fiscal) {
+                            fiscalConfig = settings[key].fiscal;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            if (fiscalConfig) {
+                this.config = { ...DEFAULT_FISCAL_CONFIG, ...fiscalConfig };
+                console.log('✅ Configurações fiscais carregadas:', {
+                    cnpj: this.config.cnpj ? '***' + this.config.cnpj.slice(-4) : 'N/A',
+                    razaoSocial: this.config.razaoSocial || 'N/A',
+                    ie: this.config.inscricaoEstadual ? '***' + this.config.inscricaoEstadual.slice(-4) : 'N/A'
+                });
             } else {
                 this.config = { ...DEFAULT_FISCAL_CONFIG };
                 console.log('ℹ️ Usando configurações fiscais padrão');
@@ -470,7 +501,10 @@ class FiscalService {
         
         // 6. Verificar estrutura fiscal do pedido
         const fiscal = order.fiscal || {};
-        if (fiscal.enabled !== true) {
+        // NOTA: Se o gateway estiver habilitado globalmente e o pedido finalizado,
+        // assumimos que pode emitir mesmo se fiscal.enabled não estiver definido
+        const gatewayEnabled = this.config?.gateway?.enabled === true;
+        if (!gatewayEnabled && fiscal.enabled !== true) {
             reasons.push('Emissão fiscal não está habilitada para este pedido');
         }
         
