@@ -873,6 +873,7 @@
             // Listener para pedidos
             ordersRef.on('value', (snapshot) => {
                 const data = snapshot.val();
+                console.log('📦 Dados recebidos do Firebase:', data ? Object.keys(data).length + ' pedidos' : 'nenhum');
                 
                 if (data) {
                     const newOrders = Object.entries(data).map(([id, order]) => ({
@@ -880,13 +881,29 @@
                         ...order
                     }));
                     
-                    // Filtrar pedidos de hoje
-                    const today = new Date().toISOString().split('T')[0];
+                    console.log('📋 Total de pedidos:', newOrders.length);
+                    
+                    // Filtrar pedidos dos últimos 7 dias (não apenas hoje)
+                    const now = new Date();
+                    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    
                     orders = newOrders.filter(order => {
-                        if (!order.createdAt && !order.date) return false;
-                        const orderDate = (order.createdAt || order.date).split('T')[0];
-                        return orderDate === today;
+                        // Tentar várias propriedades de data
+                        const dateStr = order.createdAt || order.date || order.timestamp;
+                        if (!dateStr) {
+                            console.log('⚠️ Pedido sem data:', order.id);
+                            return true; // Incluir pedidos sem data
+                        }
+                        
+                        try {
+                            const orderDate = new Date(dateStr);
+                            return orderDate >= sevenDaysAgo;
+                        } catch (e) {
+                            return true; // Incluir se não conseguir parsear
+                        }
                     });
+                    
+                    console.log('📋 Pedidos após filtro de data:', orders.length);
                     
                     // Ordenar por data (mais recentes primeiro)
                     orders.sort((a, b) => {
