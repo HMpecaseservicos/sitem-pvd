@@ -861,7 +861,8 @@
                 return;
             }
             
-            const ordersRef = database.ref('orders');
+            // IMPORTANTE: Usar 'online-orders' em vez de 'orders' para sincronizar com sistema principal
+            const ordersRef = database.ref('online-orders');
             
             // Monitorar conexão
             database.ref('.info/connected').on('value', (snapshot) => {
@@ -1063,7 +1064,8 @@
         
         async function updateOrderStatus(orderId, newStatus) {
             try {
-                const orderRef = database.ref(`orders/${orderId}`);
+                // IMPORTANTE: Usar 'online-orders' para sincronizar com sistema principal
+                const orderRef = database.ref(`online-orders/${orderId}`);
                 await orderRef.update({
                     status: newStatus,
                     [`${newStatus}At`]: new Date().toISOString(),
