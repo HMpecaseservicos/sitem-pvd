@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel do Balcao - BurgerPDV</title>
+    <title>Cozinha - Produção | GO BURGER</title>
     <link rel="manifest" href="manifest.json">
     
     <!-- Favicon usando SVG inline (hamburger icon) -->
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>B</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍔</text></svg>">
     
     <!-- Apple Touch Icon (fallback) -->
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>B</text></svg>">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍔</text></svg>">
     
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -636,14 +636,14 @@
     <header class="header">
         <div class="header-content">
             <div class="logo">
-                <span class="logo-icon">B</span>
-                <span class="logo-text">Painel do Balcão</span>
+                <span class="logo-icon">🍔</span>
+                <span class="logo-text">Cozinha - Produção</span>
             </div>
             
             <div class="header-stats">
                 <div class="stat-badge pending">
-                    <i class="fas fa-clock"></i>
-                    <span id="pending-count">0</span> Pendentes
+                    <i class="fas fa-check"></i>
+                    <span id="pending-count">0</span> Novos
                 </div>
                 <div class="stat-badge preparing">
                     <i class="fas fa-fire"></i>
@@ -673,15 +673,10 @@
     <!-- Filters -->
     <div class="filters">
         <div class="filters-content">
-            <button class="filter-btn active" data-status="all">
+            <button class="filter-btn active" data-status="production">
                 <i class="fas fa-list"></i>
                 Todos
                 <span class="count" id="all-count">0</span>
-            </button>
-            <button class="filter-btn" data-status="pending">
-                <i class="fas fa-clock"></i>
-                Pendentes
-                <span class="count" id="filter-pending-count">0</span>
             </button>
             <button class="filter-btn" data-status="confirmed">
                 <i class="fas fa-check"></i>
@@ -697,11 +692,6 @@
                 <i class="fas fa-bell"></i>
                 Prontos
                 <span class="count" id="filter-ready-count">0</span>
-            </button>
-            <button class="filter-btn" data-status="delivered">
-                <i class="fas fa-check-double"></i>
-                Entregues
-                <span class="count" id="filter-delivered-count">0</span>
             </button>
         </div>
     </div>
@@ -801,7 +791,7 @@
         // ========================================
         
         let orders = [];
-        let currentFilter = 'all';
+        let currentFilter = 'production';
         let soundEnabled = true;
         let lastOrderCount = 0;
         
@@ -997,23 +987,26 @@
         function renderOrders() {
             const grid = document.getElementById('orders-grid');
             
-            // Filtrar por status
+            // Filtrar por status - BALCÃO PRODUÇÃO: só confirmed, preparing, ready
             let filtered = orders;
-            if (currentFilter !== 'all') {
-                filtered = orders.filter(o => o.status === currentFilter);
-            }
             
-            // Filtrar apenas pedidos ativos (não cancelados, exceto se filtro específico)
-            if (currentFilter === 'all') {
-                filtered = filtered.filter(o => o.status !== 'cancelled');
+            // Estados válidos para produção
+            const productionStatuses = ['confirmed', 'preparing', 'ready'];
+            
+            if (currentFilter === 'production' || currentFilter === 'all') {
+                // Mostrar apenas pedidos de produção
+                filtered = orders.filter(o => productionStatuses.includes(o.status));
+            } else {
+                // Filtro específico (confirmed, preparing ou ready)
+                filtered = orders.filter(o => o.status === currentFilter);
             }
             
             if (filtered.length === 0) {
                 grid.innerHTML = `
                     <div class="empty-state" style="grid-column: 1/-1;">
                         <i class="fas fa-inbox"></i>
-                        <h3>Nenhum pedido encontrado</h3>
-                        <p>Os pedidos aparecerão aqui automaticamente</p>
+                        <h3>Nenhum pedido para produção</h3>
+                        <p>Aguardando pedidos confirmados...</p>
                     </div>
                 `;
                 return;
@@ -1052,19 +1045,9 @@
             
             const total = order.total || order.valores?.total || orderItems.reduce((sum, i) => sum + ((i.price || i.preco || 0) * (i.quantity || i.quantidade || 1)), 0) || 0;
             
-            // Botões baseados no status
+            // Botões baseados no status - APENAS PRODUÇÃO (cozinha)
             let actionButtons = '';
             switch (status) {
-                case 'pending':
-                    actionButtons = `
-                        <button class="btn btn-success" onclick="updateOrderStatus('${order.id}', 'confirmed')">
-                            <i class="fas fa-check"></i> Confirmar
-                        </button>
-                        <button class="btn btn-danger" onclick="updateOrderStatus('${order.id}', 'cancelled')">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    `;
-                    break;
                 case 'confirmed':
                     actionButtons = `
                         <button class="btn btn-warning" onclick="updateOrderStatus('${order.id}', 'preparing')">
@@ -1081,22 +1064,13 @@
                     break;
                 case 'ready':
                     actionButtons = `
-                        <button class="btn btn-primary" onclick="updateOrderStatus('${order.id}', 'delivered')">
-                            <i class="fas fa-check-double"></i> Entregue
-                        </button>
                         <button class="btn btn-secondary" onclick="callCustomer('${order.id}', '${customerName}')">
-                            <i class="fas fa-bullhorn"></i> Chamar
+                            <i class="fas fa-bullhorn"></i> Chamar Cliente
                         </button>
                     `;
                     break;
-                case 'delivered':
-                case 'cancelled':
-                    actionButtons = `
-                        <button class="btn btn-secondary" onclick="printOrder('${order.id}')">
-                            <i class="fas fa-print"></i> Imprimir
-                        </button>
-                    `;
-                    break;
+                default:
+                    actionButtons = '';
             }
             
             return `
@@ -1228,27 +1202,33 @@
         }
         
         function updateStats() {
+            // PRODUÇÃO: Conta apenas confirmed, preparing, ready
+            const productionStatuses = ['confirmed', 'preparing', 'ready'];
+            const productionOrders = orders.filter(o => productionStatuses.includes(o.status));
+            
             const counts = {
-                all: orders.filter(o => o.status !== 'cancelled').length,
-                pending: orders.filter(o => o.status === 'pending').length,
+                production: productionOrders.length,
                 confirmed: orders.filter(o => o.status === 'confirmed').length,
                 preparing: orders.filter(o => o.status === 'preparing').length,
-                ready: orders.filter(o => o.status === 'ready').length,
-                delivered: orders.filter(o => o.status === 'delivered').length
+                ready: orders.filter(o => o.status === 'ready').length
             };
             
-            // Header stats
-            document.getElementById('pending-count').textContent = counts.pending;
+            // Header stats - mostra confirmação (novo pedido), preparando e prontos
+            document.getElementById('pending-count').textContent = counts.confirmed; // Confirmação para cozinha
             document.getElementById('preparing-count').textContent = counts.preparing;
             document.getElementById('ready-count').textContent = counts.ready;
             
-            // Filter counts
-            document.getElementById('all-count').textContent = counts.all;
-            document.getElementById('filter-pending-count').textContent = counts.pending;
-            document.getElementById('filter-confirmed-count').textContent = counts.confirmed;
-            document.getElementById('filter-preparing-count').textContent = counts.preparing;
-            document.getElementById('filter-ready-count').textContent = counts.ready;
-            document.getElementById('filter-delivered-count').textContent = counts.delivered;
+            // Filter counts - apenas produção
+            document.getElementById('all-count').textContent = counts.production;
+            if (document.getElementById('filter-confirmed-count')) {
+                document.getElementById('filter-confirmed-count').textContent = counts.confirmed;
+            }
+            if (document.getElementById('filter-preparing-count')) {
+                document.getElementById('filter-preparing-count').textContent = counts.preparing;
+            }
+            if (document.getElementById('filter-ready-count')) {
+                document.getElementById('filter-ready-count').textContent = counts.ready;
+            }
         }
         
         function getStatusText(status) {
