@@ -886,11 +886,10 @@
                     // DEBUG: Ver estrutura dos primeiros pedidos ANTES do filtro
                     console.log('🔍 Estrutura dos primeiros 3 pedidos BRUTOS:', newOrders.slice(0, 3).map(o => ({
                         id: o.id?.slice(-8),
-                        hasItems: !!o.items,
-                        itemsLength: o.items?.length,
-                        total: o.total,
-                        createdAt: o.createdAt,
-                        date: o.date,
+                        hasItems: !!(o.items || o.itens),
+                        itemsLength: (o.items || o.itens)?.length,
+                        total: o.total || o.valores?.total,
+                        createdAt: o.createdAt || o.date || o.timestamp,
                         status: o.status,
                         deletedAt: o.deletedAt
                     })));
@@ -907,14 +906,15 @@
                     let excludedDeleted = 0;
                     
                     orders = newOrders.filter(order => {
-                        // FILTRO 1: Deve ter itens
-                        if (!order.items || order.items.length === 0) {
+                        // FILTRO 1: Deve ter itens (verifica 'items' OU 'itens')
+                        const orderItems = order.items || order.itens;
+                        if (!orderItems || orderItems.length === 0) {
                             excludedNoItems++;
                             return false;
                         }
                         
                         // FILTRO 2: Deve ter valor > 0
-                        const total = order.total || order.items?.reduce((sum, i) => sum + ((i.price || 0) * (i.quantity || 1)), 0) || 0;
+                        const total = order.total || order.valores?.total || orderItems?.reduce((sum, i) => sum + ((i.price || i.preco || 0) * (i.quantity || i.quantidade || 1)), 0) || 0;
                         if (total <= 0) {
                             excludedNoValue++;
                             return false;
@@ -962,8 +962,8 @@
                     console.log('📋 Primeiros 5 pedidos:', orders.slice(0, 5).map(o => ({
                         id: o.id?.slice(-6),
                         status: o.status,
-                        items: o.items?.length,
-                        total: o.total,
+                        items: (o.items || o.itens)?.length,
+                        total: o.total || o.valores?.total,
                         updatedAt: o.updatedAt
                     })));
                     
@@ -1032,23 +1032,25 @@
             const timeElapsed = getTimeElapsed(order.createdAt || order.date);
             const isUrgent = timeElapsed.minutes > 15;
             
-            const items = (order.items || []).map(item => `
+            // Compatibilidade: 'items' (EN) ou 'itens' (PT)
+            const orderItems = order.items || order.itens || [];
+            const items = orderItems.map(item => `
                 <div class="order-item">
                     <div>
                         <div class="item-name">
-                            <span class="item-qty">${item.quantity || 1}x</span>
-                            ${item.name || item.product?.name || 'Item'}
+                            <span class="item-qty">${item.quantity || item.quantidade || 1}x</span>
+                            ${item.name || item.nome || item.product?.name || 'Item'}
                         </div>
                         ${item.extras && item.extras.length > 0 ? 
-                            `<div class="item-extras">+ ${item.extras.map(e => e.name || e).join(', ')}</div>` : 
+                            `<div class="item-extras">+ ${item.extras.map(e => e.name || e.nome || e).join(', ')}</div>` : 
                             ''
                         }
-                        ${item.notes ? `<div class="item-extras">Obs: ${item.notes}</div>` : ''}
+                        ${item.notes || item.observacoes ? `<div class="item-extras">Obs: ${item.notes || item.observacoes}</div>` : ''}
                     </div>
                 </div>
             `).join('');
             
-            const total = order.total || order.items?.reduce((sum, i) => sum + (i.price * (i.quantity || 1)), 0) || 0;
+            const total = order.total || order.valores?.total || orderItems.reduce((sum, i) => sum + ((i.price || i.preco || 0) * (i.quantity || i.quantidade || 1)), 0) || 0;
             
             // Botões baseados no status
             let actionButtons = '';
@@ -1182,19 +1184,27 @@
             
             // Criar janela de impressao
             const printWindow = window.open('', '_blank');
-            const itemsHtml = (order.items || []).map(function(item) {
-                return '<div class="item">' + (item.quantity || 1) + 'x ' + item.name + ' - R$ ' + ((item.price || 0) * (item.quantity || 1)).toFixed(2) + '<\/div>';
+            const orderItems = order.items || order.itens || [];
+            const itemsHtml = orderItems.map(function(item) {
+                const qty = item.quantity || item.quantidade || 1;
+                const name = item.name || item.nome || 'Item';
+                const price = item.price || item.preco || 0;
+                return '<div class="item">' + qty + 'x ' + name + ' - R$ ' + (price * qty).toFixed(2) + '<\/div>';
             }).join('');
             
-            const html = '<!DOCTYPE html><html><head><title>Pedido #' + (order.number || order.id.slice(-4)) + '<\/title>' +
+            const totalValue = order.total || order.valores?.total || 0;
+            const customerName = order.customer?.name || order.cliente?.nome || order.customerName || 'Cliente';
+            const orderDate = order.createdAt || order.date || order.timestamp;
+            
+            const html = '<!DOCTYPE html><html><head><title>Pedido #' + (order.number || order.numero || order.id.slice(-4)) + '<\/title>' +
                 '<style>body { font-family: monospace; padding: 20px; } h1 { text-align: center; } .item { margin: 10px 0; } .total { font-size: 1.5em; font-weight: bold; margin-top: 20px; }<\/style>' +
                 '<\/head><body>' +
                 '<h1>BurgerPDV<\/h1>' +
-                '<h2>Pedido #' + (order.number || order.id.slice(-4)) + '<\/h2>' +
-                '<p>Cliente: ' + (order.customer?.name || order.customerName || 'Cliente') + '<\/p>' +
-                '<p>Data: ' + new Date(order.createdAt || order.date).toLocaleString('pt-BR') + '<\/p>' +
+                '<h2>Pedido #' + (order.number || order.numero || order.id.slice(-4)) + '<\/h2>' +
+                '<p>Cliente: ' + customerName + '<\/p>' +
+                '<p>Data: ' + new Date(orderDate).toLocaleString('pt-BR') + '<\/p>' +
                 '<hr>' + itemsHtml + '<hr>' +
-                '<div class="total">Total: R$ ' + (order.total || 0).toFixed(2) + '<\/div>' +
+                '<div class="total">Total: R$ ' + totalValue.toFixed(2) + '<\/div>' +
                 '<\/body><\/html>';
             
             printWindow.document.write(html);
