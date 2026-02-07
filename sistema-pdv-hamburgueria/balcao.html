@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -802,19 +802,34 @@
             const qty = item.quantity || item.quantidade || 1;
             const name = item.name || item.nome || item.product?.name || 'Item';
             
+            // Helper para garantir array
+            function ensureArray(value) {
+                if (!value) return [];
+                if (Array.isArray(value)) return value;
+                if (typeof value === 'string') return value.split(',').map(s => s.trim()).filter(Boolean);
+                if (typeof value === 'object') return Object.values(value);
+                return [];
+            }
+            
             // Extras/Adicionais
             let extrasHtml = '';
-            const extras = item.extras || item.adicionais || [];
+            const extras = ensureArray(item.extras || item.adicionais);
             if (extras.length > 0) {
-                const extraNames = extras.map(e => e.name || e.nome || e).join(', ');
+                const extraNames = extras.map(e => {
+                    if (typeof e === 'string') return e;
+                    return e.name || e.nome || String(e);
+                }).join(', ');
                 extrasHtml = `<div class="item-extras">${extraNames}</div>`;
             }
             
             // Removidos
             let removedHtml = '';
-            const removed = item.removed || item.removidos || [];
+            const removed = ensureArray(item.removed || item.removidos);
             if (removed.length > 0) {
-                const removedNames = removed.map(r => r.name || r.nome || r).join(', ');
+                const removedNames = removed.map(r => {
+                    if (typeof r === 'string') return r;
+                    return r.name || r.nome || String(r);
+                }).join(', ');
                 removedHtml = `<div class="item-removidos">${removedNames}</div>`;
             }
             
@@ -827,7 +842,7 @@
             
             // Customizações (ponto da carne, etc)
             let customHtml = '';
-            const customizations = item.customizations || item.personalizacoes || [];
+            const customizations = ensureArray(item.customizations || item.personalizacoes);
             if (customizations.length > 0) {
                 const customText = customizations.map(c => {
                     if (typeof c === 'string') return c;
