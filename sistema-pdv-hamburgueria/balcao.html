@@ -881,29 +881,46 @@
                         ...order
                     }));
                     
-                    console.log('📋 Total de pedidos:', newOrders.length);
+                    console.log('📋 Total de pedidos brutos:', newOrders.length);
                     
-                    // Filtrar pedidos dos últimos 7 dias (não apenas hoje)
+                    // Filtrar pedidos REAIS (últimas 48h, com itens e valor)
                     const now = new Date();
-                    const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
                     
                     orders = newOrders.filter(order => {
-                        // Tentar várias propriedades de data
-                        const dateStr = order.createdAt || order.date || order.timestamp;
-                        if (!dateStr) {
-                            console.log('⚠️ Pedido sem data:', order.id);
-                            return true; // Incluir pedidos sem data
+                        // FILTRO 1: Deve ter itens
+                        if (!order.items || order.items.length === 0) {
+                            return false;
                         }
                         
-                        try {
-                            const orderDate = new Date(dateStr);
-                            return orderDate >= sevenDaysAgo;
-                        } catch (e) {
-                            return true; // Incluir se não conseguir parsear
+                        // FILTRO 2: Deve ter valor > 0
+                        const total = order.total || order.items?.reduce((sum, i) => sum + ((i.price || 0) * (i.quantity || 1)), 0) || 0;
+                        if (total <= 0) {
+                            return false;
                         }
+                        
+                        // FILTRO 3: Data recente (últimas 48h)
+                        const dateStr = order.createdAt || order.date || order.timestamp;
+                        if (dateStr) {
+                            try {
+                                const orderDate = new Date(dateStr);
+                                if (orderDate < twoDaysAgo) {
+                                    return false;
+                                }
+                            } catch (e) {
+                                // Ignorar erro de parse
+                            }
+                        }
+                        
+                        // FILTRO 4: Não deletado
+                        if (order.deletedAt) {
+                            return false;
+                        }
+                        
+                        return true;
                     });
                     
-                    console.log('📋 Pedidos após filtro de data:', orders.length);
+                    console.log('📋 Pedidos reais após filtros:', orders.length);
                     
                     // Ordenar por data (mais recentes primeiro)
                     orders.sort((a, b) => {
