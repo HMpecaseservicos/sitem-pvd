@@ -883,19 +883,40 @@
                     
                     console.log('📋 Total de pedidos brutos:', newOrders.length);
                     
+                    // DEBUG: Ver estrutura dos primeiros pedidos ANTES do filtro
+                    console.log('🔍 Estrutura dos primeiros 3 pedidos BRUTOS:', newOrders.slice(0, 3).map(o => ({
+                        id: o.id?.slice(-8),
+                        hasItems: !!o.items,
+                        itemsLength: o.items?.length,
+                        total: o.total,
+                        createdAt: o.createdAt,
+                        date: o.date,
+                        status: o.status,
+                        deletedAt: o.deletedAt
+                    })));
+                    
                     // Filtrar pedidos REAIS (últimas 48h, com itens e valor)
                     const now = new Date();
                     const twoDaysAgo = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+                    console.log('📅 Filtrando desde:', twoDaysAgo.toISOString());
+                    
+                    // Contadores de exclusão
+                    let excludedNoItems = 0;
+                    let excludedNoValue = 0;
+                    let excludedOldDate = 0;
+                    let excludedDeleted = 0;
                     
                     orders = newOrders.filter(order => {
                         // FILTRO 1: Deve ter itens
                         if (!order.items || order.items.length === 0) {
+                            excludedNoItems++;
                             return false;
                         }
                         
                         // FILTRO 2: Deve ter valor > 0
                         const total = order.total || order.items?.reduce((sum, i) => sum + ((i.price || 0) * (i.quantity || 1)), 0) || 0;
                         if (total <= 0) {
+                            excludedNoValue++;
                             return false;
                         }
                         
@@ -905,6 +926,7 @@
                             try {
                                 const orderDate = new Date(dateStr);
                                 if (orderDate < twoDaysAgo) {
+                                    excludedOldDate++;
                                     return false;
                                 }
                             } catch (e) {
@@ -914,10 +936,18 @@
                         
                         // FILTRO 4: Não deletado
                         if (order.deletedAt) {
+                            excludedDeleted++;
                             return false;
                         }
                         
                         return true;
+                    });
+                    
+                    console.log('❌ Excluídos por motivo:', {
+                        semItens: excludedNoItems,
+                        semValor: excludedNoValue,
+                        dataAntiga: excludedOldDate,
+                        deletados: excludedDeleted
                     });
                     
                     console.log('📋 Pedidos reais após filtros:', orders.length);
