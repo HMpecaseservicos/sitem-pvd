@@ -314,6 +314,18 @@
             margin-top: 8px;
         }
         
+        .item-custom {
+            font-size: 0.9rem;
+            color: var(--accent-blue);
+            margin-bottom: 4px;
+            padding: 4px 0;
+        }
+        
+        .item-custom strong {
+            color: #aaa;
+            font-weight: 500;
+        }
+        
         /* Observações Gerais */
         .comanda-obs {
             padding: 15px 20px;
@@ -470,8 +482,8 @@
         /* ========== CONNECTION STATUS ========== */
         .connection-badge {
             position: fixed;
-            top: 20px;
-            right: 20px;
+            bottom: 20px;
+            left: 20px;
             padding: 8px 15px;
             border-radius: 20px;
             font-size: 0.8rem;
@@ -840,16 +852,41 @@
                 obsHtml = `<div class="item-obs">${obs}</div>`;
             }
             
-            // Customizações (ponto da carne, etc)
+            // Customizações (ponto da carne, hambúrgueres do combo, etc)
             let customHtml = '';
-            const customizations = ensureArray(item.customizations || item.personalizacoes);
-            if (customizations.length > 0) {
+            const customizations = item.customizations || item.personalizacoes;
+            
+            if (customizations && typeof customizations === 'object' && !Array.isArray(customizations)) {
+                // Customizações como objeto: { "Ponto da Carne": {...}, "Hambúrgueres": [...] }
+                Object.entries(customizations).forEach(([groupName, selections]) => {
+                    if (Array.isArray(selections) && selections.length > 0) {
+                        // Array de seleções (checkboxes múltiplos)
+                        const items = selections.map(sel => {
+                            if (typeof sel === 'object') return sel.label || sel.name || sel.id || '';
+                            return String(sel);
+                        }).filter(Boolean);
+                        if (items.length > 0) {
+                            customHtml += `<div class="item-custom"><strong>${groupName}:</strong> ${items.join(', ')}</div>`;
+                        }
+                    } else if (selections && typeof selections === 'object') {
+                        // Objeto único (radio button)
+                        const name = selections.label || selections.name || selections.id || '';
+                        if (name) {
+                            customHtml += `<div class="item-custom"><strong>${groupName}:</strong> ${name}</div>`;
+                        }
+                    } else if (typeof selections === 'string' && selections.trim()) {
+                        // String simples
+                        customHtml += `<div class="item-custom"><strong>${groupName}:</strong> ${selections}</div>`;
+                    }
+                });
+            } else if (Array.isArray(customizations) && customizations.length > 0) {
+                // Customizações como array (formato antigo)
                 const customText = customizations.map(c => {
                     if (typeof c === 'string') return c;
-                    return c.name || c.option || '';
+                    return c.name || c.label || c.option || '';
                 }).filter(Boolean).join(', ');
                 if (customText) {
-                    extrasHtml += `<div class="item-extras">${customText}</div>`;
+                    customHtml = `<div class="item-custom">${customText}</div>`;
                 }
             }
             
@@ -859,8 +896,9 @@
                         <div class="item-qty">${qty}x</div>
                         <div class="item-nome">${name}</div>
                     </div>
-                    ${extrasHtml || removedHtml || obsHtml ? `
+                    ${extrasHtml || removedHtml || customHtml || obsHtml ? `
                         <div class="item-detalhes">
+                            ${customHtml}
                             ${extrasHtml}
                             ${removedHtml}
                             ${obsHtml}
